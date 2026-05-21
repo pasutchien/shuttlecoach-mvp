@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npx --version)",
+      "PowerShell(npm *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(winget install *)",
+      "PowerShell(Get-Item *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell($nodeDir=\"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64\"; cmd /c dir /b \"$nodeDir\"; Write-Output \"---version---\"; & \"$nodeDir\\\\node.exe\" --version; & \"$nodeDir\\\\npm.cmd\" --version)",
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; $env:CI=\"1\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\"; npx --yes create-expo-app@latest _scaffold --template default --no-install)",
+      "PowerShell(cmd /c dir /b \"C:\\\\claude-proj\\\\shuttlecoach\\\\_scaffold\"; Write-Output \"---app---\"; cmd /c dir /b \"C:\\\\claude-proj\\\\shuttlecoach\\\\_scaffold\\\\app\")",
+      "PowerShell(npm install *)",
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; $env:CI=\"1\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx expo install nativewind tailwindcss@^3.4.17 @expo-google-fonts/syne @expo-google-fonts/space-grotesk @expo-google-fonts/dm-sans @expo-google-fonts/dm-mono expo-localization expo-video @react-native-async-storage/async-storage react-native-svg i18n-js zustand lucide-react-native react-native-gifted-charts class-variance-authority clsx tailwind-merge react-native-confetti-cannon 2>&1 | Select-Object -Last 25)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Join-Path *)",
+      "Bash(dir \"C:/claude-proj/shuttlecoach/mvp/app\")",
+      "Bash(npx tsc *)",
+      "Bash(Get-ChildItem \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\\\\app\" -Recurse)",
+      "Bash(Select-Object FullName)",
+      "Bash(node_modules/.bin/tsc --noEmit --skipLibCheck)",
+      "Read(//usr/local/bin/**)",
+      "Read(//usr/bin/**)",
+      "Bash(command -v node)",
+      "PowerShell(Get-ChildItem \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\\\\app\" -Recurse -File | ForEach-Object { $_.FullName })",
+      "PowerShell(& \"C:\\\\Program Files\\\\nodejs\\\\node.exe\" --version 2>&1; & \"C:\\\\Program Files\\\\nodejs\\\\npx.cmd\" --version 2>&1)",
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx tsc --noEmit 2>&1 | Select-Object -First 80)",
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx tsc --noEmit 2>&1 | Select-String -NotMatch \"npm notice\" | Select-Object -First 60)",
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx expo export --platform web 2>&1 | Select-Object -Last 60)",
+      "PowerShell(Test-Path \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\\\\node_modules\\\\babel-preset-expo\"; $env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx expo install babel-preset-expo 2>&1 | Select-Object -Last 10)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" \"http://localhost:8099/\")",
+      "Bash(curl -s \"http://localhost:8099/_expo/static/js/web/index.bundle?platform=web&dev=true\" -o bundle-test.js -w \"bundle HTTP %{http_code}, %{size_download} bytes\\\\n\")",
+      "Bash(curl -s \"http://localhost:8099/\")",
+      "Bash(curl -s \"http://localhost:8099/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable\" -o dev-bundle.js -w \"bundle HTTP %{http_code}, %{size_download} bytes\\\\n\")",
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx expo lint 2>&1 | Select-String -NotMatch \"npm notice\" | Select-Object -First 60)",
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx tsc --noEmit 2>&1 | Select-String -NotMatch \"npm notice\"; Write-Output \"TSC_EXIT=$LASTEXITCODE\"; npx expo lint 2>&1 | Select-String -Pattern \"problem|error\" | Select-Object -Last 3)"
+    ]
+  }
+}

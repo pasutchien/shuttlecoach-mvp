@@ -1,0 +1,22 @@
+/** Shared (app-specific) component barrel. */
+export { SponsorBadge } from './SponsorBadge';
+export type { SponsorBadgeVariant } from './SponsorBadge';
+export { StrokeIcon } from './StrokeIcon';
+export { ProAvatar } from './ProAvatar';
+export { ScoreCircle } from './ScoreCircle';
+export { ProgressRing } from './ProgressRing';
+export { VideoThumbnail } from './VideoThumbnail';
+export { EmptyState } from './EmptyState';
+export { StepIndicator } from './StepIndicator';
+export { CheckpointBar } from './CheckpointBar';
+export { MistakeHighlightCard } from './MistakeHighlightCard';
+export { AnalysisSummaryCard } from './AnalysisSummaryCard';
+export { AnalysisHistoryCard } from './AnalysisHistoryCard';
+export { CoachingTipCard } from './CoachingTipCard';
+export { PackageCard } from './PackageCard';
+export { ProgressChart } from './ProgressChart';
+export type { ChartPoint } from './ProgressChart';
+export { PoseSkeleton } from './PoseSkeleton';
+export { ConfettiOverlay } from './ConfettiOverlay';
+export { SelectSheet } from './SelectSheet';
+export type { SelectOption } from './SelectSheet';
