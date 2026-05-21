@@ -27,6 +27,21 @@
   "splash": {
     "tagline": "Perfect Your Form. Powered by AI."
   },
+  "login": {
+    "title": "Welcome back",
+    "subtitle": "Log in to analyze and perfect your badminton form.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "loginCta": "Log In",
+    "orDivider": "or",
+    "google": "Continue with Google",
+    "line": "Continue with LINE",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign up",
+    "mockNote": "Demo build — sign-in is not connected to a backend yet."
+  },
   "onboarding": {
     "headline": "Set Up Your Athlete Profile",
     "subheadline": "Help Shuttle Coach tailor your analysis to your body and goals.",

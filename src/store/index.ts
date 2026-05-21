@@ -1,4 +1,5 @@
 /** Store barrel + the app-startup hydration coordinator. */
+import { useSettingsStore } from './settings';
 import { useUserStore } from './user';
 import { useCreditStore } from './credits';
 import { useAnalysisStore } from './analyses';
@@ -20,6 +21,7 @@ export {
  * history only load when a profile exists (a fresh user has neither yet).
  */
 export async function hydrateApp(): Promise<void> {
+  await useSettingsStore.getState().hydrate();
   await useUserStore.getState().hydrate();
   if (useUserStore.getState().profile) {
     await Promise.all([

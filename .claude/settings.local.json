@@ -36,7 +36,12 @@
       "Bash(curl -s \"http://localhost:8099/node_modules/expo-router/entry.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable\" -o dev-bundle.js -w \"bundle HTTP %{http_code}, %{size_download} bytes\\\\n\")",
       "PowerShell(Get-NetTCPConnection *)",
       "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx expo lint 2>&1 | Select-String -NotMatch \"npm notice\" | Select-Object -First 60)",
-      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx tsc --noEmit 2>&1 | Select-String -NotMatch \"npm notice\"; Write-Output \"TSC_EXIT=$LASTEXITCODE\"; npx expo lint 2>&1 | Select-String -Pattern \"problem|error\" | Select-Object -Last 3)"
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx tsc --noEmit 2>&1 | Select-String -NotMatch \"npm notice\"; Write-Output \"TSC_EXIT=$LASTEXITCODE\"; npx expo lint 2>&1 | Select-String -Pattern \"problem|error\" | Select-Object -Last 3)",
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; python scripts/make_handoff_docx.py; npx tsc --noEmit 2>&1 | Select-String -NotMatch \"npm notice\"; Write-Output \"TSC_EXIT=$LASTEXITCODE\")",
+      "Bash(cd /tmp)",
+      "Bash(curl -s \"https://shuttlecoach-mvp.vercel.app/\" -o vc_index.html -w \"HTTP %{http_code} | %{content_type} | %{size_download} bytes\\\\n\")",
+      "Bash(curl -s \"https://shuttlecoach-mvp.vercel.app/_expo/static/js/web/entry-6878f0fad353e88c12d52c76350b4881.js\" -o vc_bundle.js -w \"HTTP %{http_code} | %{content_type} | %{size_download} bytes\\\\n\")",
+      "Bash(curl -s \"https://shuttlecoach-mvp.vercel.app/login\" -o vc_login.html -w \"HTTP %{http_code} | %{content_type} | %{size_download} bytes\\\\n\")"
     ]
   }
 }

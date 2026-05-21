@@ -27,6 +27,21 @@
   "splash": {
     "tagline": "พัฒนาฟอร์มของคุณให้สมบูรณ์แบบ ด้วยพลัง AI"
   },
+  "login": {
+    "title": "ยินดีต้อนรับกลับมา",
+    "subtitle": "เข้าสู่ระบบเพื่อวิเคราะห์และพัฒนาฟอร์มแบดมินตันของคุณ",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "กรอกรหัสผ่านของคุณ",
+    "loginCta": "เข้าสู่ระบบ",
+    "orDivider": "หรือ",
+    "google": "เข้าสู่ระบบด้วย Google",
+    "line": "เข้าสู่ระบบด้วย LINE",
+    "noAccount": "ยังไม่มีบัญชี?",
+    "signUp": "สมัครสมาชิก",
+    "mockNote": "เวอร์ชันสาธิต — การเข้าสู่ระบบยังไม่ได้เชื่อมต่อกับระบบหลังบ้าน"
+  },
   "onboarding": {
     "headline": "ตั้งค่าโปรไฟล์นักกีฬาของคุณ",
     "subheadline": "ช่วยให้ Shuttle Coach วิเคราะห์ได้ตรงกับสรีระและเป้าหมายของคุณ",

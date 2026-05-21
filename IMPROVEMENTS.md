@@ -69,6 +69,22 @@ decisions. None of them is required for the demo to work.
 | **History tab unread-result badge** (SPEC §3.2). | ux (#3) | Needs a new "unread" data model on analyses. | Medium | M | Needs care |
 | **Thai translation of UI labels** — tab bar, filter chips, checkpoint & severity names. | ux (#14–16) | A reviewer flagged these; **however** SPEC §2.3 explicitly says "UI labels in English". This is a product decision — see §3 below. | Low | M | Needs decision |
 
+### Authentication — open decision (NOT a reviewer finding; added by the team)
+
+A **mock Login screen** (`app/login.tsx`) is now in the app: email/password
+fields plus "Continue with Google" and "Continue with LINE". It is **front-end
+only** — any input or button simply proceeds; no credentials are checked,
+stored, or sent anywhere. The flow is now Splash → **Login** → Onboarding / Home.
+
+Real authentication is **not built** and needs a product + backend decision:
+
+- Which methods to support — email/password, Google, LINE (LINE is the obvious
+  primary for the Thai market).
+- The backend must add the auth endpoints, issue a session token, and the
+  front-end's `proceed()` in `app/login.tsx` must be wired to a real sign-in
+  call. A "Sign up" screen is also still a placeholder (the link just proceeds).
+- This is captured for Chien in `BACKEND.md` / the integration handoff doc.
+
 ### Feature ideas (trend research — all mock-data-safe unless noted)
 
 | Idea | Why it matters | Priority |

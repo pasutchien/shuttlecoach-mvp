@@ -342,6 +342,14 @@ body(
 
 # ============================ 7. GOTCHAS ====================================
 h1("7. Things to know before you start")
+bullet(" app/login.tsx is a MOCK login screen — email/password fields plus "
+       "'Continue with Google' and 'Continue with LINE'. Any input or button "
+       "just proceeds; there is NO real authentication, password storage or "
+       "OAuth yet. Real auth is yours to build: add the endpoints, issue a "
+       "session token, and wire the screen's proceed() to a real sign-in call. "
+       "The 'Sign up' link is also a placeholder. The app flow is "
+       "Splash -> Login -> Onboarding/Home.",
+       "Login / auth (NOT built):")
 bullet(" the mock ships generic placeholder clips in assets/videos/. The real "
        "backend should return real per-analysis userVideoUrl / proVideoUrl. The "
        "app resolves them via resolveVideoSource() in src/constants/media.ts — "

@@ -22,7 +22,6 @@ import { useUserStore } from '@/src/store';
 export default function SplashScreen() {
   const { t } = useTranslation();
   const reduced = useReducedMotion();
-  const profile = useUserStore((s) => s.profile);
   const hydrated = useUserStore((s) => s.hydrated);
 
   const logo = useSharedValue(reduced ? 1 : 0);
@@ -36,14 +35,14 @@ export default function SplashScreen() {
     sponsor.value = withDelay(1000, withTiming(1, { duration: 400 }));
   }, [reduced, logo, tagline, sponsor]);
 
-  // Hold ~2s then route based on auth state.
+  // Hold ~2s (the brand moment), then go to the Login screen.
   useEffect(() => {
     if (!hydrated) return;
     const timer = setTimeout(() => {
-      router.replace(profile ? '/(tabs)/home' : '/onboarding');
+      router.replace('/login');
     }, 2000);
     return () => clearTimeout(timer);
-  }, [hydrated, profile]);
+  }, [hydrated]);
 
   const logoStyle = useAnimatedStyle(() => ({ opacity: logo.value }));
   const taglineStyle = useAnimatedStyle(() => ({ opacity: tagline.value }));
