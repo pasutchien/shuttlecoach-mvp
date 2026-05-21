@@ -27,7 +27,7 @@ export default function TabsLayout() {
           paddingBottom: 24,
         },
         tabBarLabelStyle: {
-          fontFamily: 'SpaceGrotesk_500Medium',
+          fontFamily: 'Inter_500Medium',
           fontSize: 11,
         },
       }}

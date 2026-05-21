@@ -17,10 +17,10 @@ export type TextVariant =
   | 'mono';
 
 const VARIANT_CLASS: Record<TextVariant, string> = {
-  hero: 'font-display text-[32px] leading-[38px] text-ink',
-  display: 'font-display text-[28px] leading-[34px] text-ink',
-  h1: 'font-heading-bold text-[24px] leading-[30px] text-ink',
-  h2: 'font-heading-bold text-[20px] leading-[26px] text-ink',
+  hero: 'font-display text-[26px] leading-[32px] text-ink',
+  display: 'font-display text-[24px] leading-[30px] text-ink',
+  h1: 'font-heading-bold text-[22px] leading-[28px] text-ink',
+  h2: 'font-heading-bold text-[18px] leading-[24px] text-ink',
   label: 'font-label text-[15px] leading-[20px] text-ink',
   body: 'font-body text-[14px] leading-[21px] text-ink',
   bodyMedium: 'font-body-medium text-[14px] leading-[21px] text-ink',

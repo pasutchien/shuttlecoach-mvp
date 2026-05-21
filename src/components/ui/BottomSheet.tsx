@@ -118,14 +118,27 @@ export function BottomSheet({
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View className="flex-1 justify-end">
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        {/* Dim overlay — critical visual styles live on `style` (not className)
+            because NativeWind classes are not reliably applied to a reanimated
+            Animated.View, which would leave the sheet transparent. */}
         <Animated.View
-          style={overlayStyle}
-          className="absolute inset-0 bg-black/40"
+          style={[
+            overlayStyle,
+            {
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.45)',
+            },
+          ]}
         >
           <Pressable
-            className="flex-1"
+            style={{ flex: 1 }}
             onPress={onClose}
+            accessibilityRole="button"
             accessibilityLabel="Close"
           />
         </Animated.View>
@@ -137,9 +150,11 @@ export function BottomSheet({
               height: sheetHeight,
               maxHeight: height * 0.92,
               paddingBottom: insets.bottom + 8,
+              backgroundColor: '#FFFFFF',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
             },
           ]}
-          className="rounded-t-sheet bg-white"
         >
           {/* Drag handle */}
           <View {...pan.panHandlers} className="items-center pt-3 pb-1">

@@ -88,7 +88,7 @@ export function ScoreCircle({
       </Svg>
       <Text
         className="font-display text-ink"
-        style={{ fontSize: size * 0.34, color: hex }}
+        style={{ fontSize: size * 0.3, color: hex }}
       >
         {display}
       </Text>

@@ -133,8 +133,7 @@ export default function LoginScreen() {
             onPress={proceed}
             accessibilityRole="button"
             accessibilityLabel={t('login.google')}
-            className="mb-3 h-12 flex-row items-center justify-center gap-2.5 rounded-button border border-border bg-white"
-            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            className="mb-3 h-12 flex-row items-center justify-center gap-2.5 rounded-button border border-border bg-white active:opacity-90"
           >
             <GoogleIcon size={18} />
             <Text variant="label" className="text-ink">
@@ -142,16 +141,13 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
 
-          {/* Continue with LINE */}
+          {/* Continue with LINE — LINE brand green (#06C755). Background set
+              via a className arbitrary value, not a style function. */}
           <Pressable
             onPress={proceed}
             accessibilityRole="button"
             accessibilityLabel={t('login.line')}
-            className="h-12 flex-row items-center justify-center gap-2.5 rounded-button"
-            style={({ pressed }) => ({
-              backgroundColor: '#06C755',
-              opacity: pressed ? 0.85 : 1,
-            })}
+            className="h-12 flex-row items-center justify-center gap-2.5 rounded-button bg-[#06C755] active:opacity-90"
           >
             <MessageCircle size={18} color="#FFFFFF" fill="#FFFFFF" />
             <Text variant="label" className="text-white">

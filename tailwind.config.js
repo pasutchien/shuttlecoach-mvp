@@ -34,13 +34,14 @@ module.exports = {
         'tip-border': '#BFDBFE', // Coaching tip card border
       },
       fontFamily: {
-        // Maps the SPEC typography roles to loaded Google Fonts.
-        display: ['Syne_800ExtraBold'], // Hero headlines, score numbers
-        'heading-bold': ['SpaceGrotesk_600SemiBold'], // Section headers, card titles
-        label: ['SpaceGrotesk_500Medium'], // Buttons, tabs, form labels
-        body: ['DMSans_400Regular'], // Body, descriptions, tips
-        'body-medium': ['DMSans_500Medium'],
-        mono: ['DMMono_400Regular'], // Numeric data, credits, technical values
+        // Single typeface — Inter — across the whole app. Weight carries
+        // hierarchy. Class names are unchanged so components need no edits.
+        display: ['Inter_700Bold'], // Hero headlines, score numbers
+        'heading-bold': ['Inter_600SemiBold'], // Section headers, card titles
+        label: ['Inter_500Medium'], // Buttons, tabs, form labels
+        body: ['Inter_400Regular'], // Body, descriptions, tips
+        'body-medium': ['Inter_500Medium'],
+        mono: ['Inter_500Medium'], // Credits, numeric data
       },
       borderRadius: {
         card: '12px',

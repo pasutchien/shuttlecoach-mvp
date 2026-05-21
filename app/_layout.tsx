@@ -8,13 +8,12 @@ import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import { Syne_800ExtraBold } from '@expo-google-fonts/syne';
 import {
-  SpaceGrotesk_500Medium,
-  SpaceGrotesk_600SemiBold,
-} from '@expo-google-fonts/space-grotesk';
-import { DMSans_400Regular, DMSans_500Medium } from '@expo-google-fonts/dm-sans';
-import { DMMono_400Regular } from '@expo-google-fonts/dm-mono';
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 
 import '../global.css';
 import { hydrateApp } from '@/src/store';
@@ -28,12 +27,10 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Syne_800ExtraBold,
-    SpaceGrotesk_600SemiBold,
-    SpaceGrotesk_500Medium,
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMMono_400Regular,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
   });
   const [stateHydrated, setStateHydrated] = useState(false);
 
