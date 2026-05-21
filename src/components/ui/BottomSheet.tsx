@@ -20,6 +20,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { cn } from '@/src/lib/cn';
+import { shadows } from '@/src/theme';
 import { useReducedMotion } from '@/src/hooks/useReducedMotion';
 
 export interface BottomSheetProps {
@@ -146,13 +147,16 @@ export function BottomSheet({
         <Animated.View
           style={[
             sheetStyle,
+            shadows.sheet,
             {
               height: sheetHeight,
               maxHeight: height * 0.92,
               paddingBottom: insets.bottom + 8,
               backgroundColor: '#FFFFFF',
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              borderTopWidth: 1,
+              borderTopColor: 'rgba(203,213,225,0.5)',
             },
           ]}
         >

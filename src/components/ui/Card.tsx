@@ -1,8 +1,11 @@
 /**
- * Card surface (SPEC §11.3). White surface, 12pt radius, soft shadow.
+ * Card surface (SPEC §11.3). White surface, 12pt radius, hairline border + a
+ * soft navy-tinted resting shadow. The hairline keeps the card from "melting"
+ * into a near-white background.
  */
 import { Pressable, View, type ViewProps } from 'react-native';
 import { cn } from '@/src/lib/cn';
+import { shadows } from '@/src/theme';
 
 export interface CardProps extends ViewProps {
   className?: string;
@@ -10,28 +13,26 @@ export interface CardProps extends ViewProps {
   onPress?: () => void;
   /** Drop the default 16pt internal padding. */
   noPadding?: boolean;
+  /** Drop the hairline border (e.g. cards on a dark surface). */
+  noBorder?: boolean;
   children?: React.ReactNode;
 }
 
-/** Shared soft shadow (0 2pt 8pt rgba(0,0,0,0.08)). */
-export const cardShadow = {
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.08,
-  shadowRadius: 8,
-  elevation: 2,
-} as const;
+/** Resting-level navy-tinted shadow (Level 1). */
+export const cardShadow = shadows.cardResting;
 
 export function Card({
   className,
   onPress,
   noPadding = false,
+  noBorder = false,
   accessibilityLabel,
   children,
   ...rest
 }: CardProps) {
   const classes = cn(
     'rounded-card bg-white',
+    !noBorder && 'border border-border-soft',
     !noPadding && 'p-card',
     className,
   );
@@ -40,7 +41,10 @@ export function Card({
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [cardShadow, { opacity: pressed ? 0.92 : 1 }]}
+        style={({ pressed }) => [
+          shadows.cardResting,
+          { transform: [{ scale: pressed ? 0.985 : 1 }] },
+        ]}
         className={classes}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
@@ -51,7 +55,7 @@ export function Card({
   }
 
   return (
-    <View style={cardShadow} className={classes} {...rest}>
+    <View style={shadows.cardResting} className={classes} {...rest}>
       {children}
     </View>
   );

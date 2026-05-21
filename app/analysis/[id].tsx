@@ -716,7 +716,7 @@ export default function AnalysisScreen() {
         <View style={{ width: halfWidth, height: videoHeight }} className="relative overflow-hidden">
           <VideoView
             player={userPlayer}
-            style={StyleSheet.absoluteFillObject}
+            style={{ width: halfWidth, height: videoHeight }}
             contentFit="cover"
             nativeControls={false}
             accessibilityLabel="Your swing video"
@@ -769,7 +769,7 @@ export default function AnalysisScreen() {
         <View style={{ width: halfWidth, height: videoHeight }} className="relative overflow-hidden">
           <VideoView
             player={proPlayer}
-            style={StyleSheet.absoluteFillObject}
+            style={{ width: halfWidth, height: videoHeight }}
             contentFit="cover"
             nativeControls={false}
             accessibilityLabel={`${currentProPlayer?.name ?? 'Pro'} reference video`}

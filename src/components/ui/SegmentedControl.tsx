@@ -27,7 +27,7 @@ export function SegmentedControl<T extends string>({
   return (
     <View
       className={cn(
-        'h-10 flex-row rounded-input bg-light p-1',
+        'h-10 flex-row rounded-input bg-slate/10 p-1',
         className,
       )}
     >

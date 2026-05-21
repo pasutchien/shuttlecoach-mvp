@@ -6,6 +6,7 @@
  */
 import { Modal, Pressable, View } from 'react-native';
 import { cn } from '@/src/lib/cn';
+import { shadows } from '@/src/theme';
 import { Button } from './Button';
 import { Text } from './Text';
 
@@ -42,6 +43,7 @@ export function Dialog({
           />
         ) : null}
         <View
+          style={shadows.modal}
           className={cn(
             'w-full max-w-[320px] rounded-2xl bg-white p-6',
             className,

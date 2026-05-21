@@ -24,15 +24,20 @@ export function Chip({
   const content = (
     <Text
       variant="label"
-      className={cn('text-[12px]', active ? 'text-white' : 'text-slate')}
+      className={cn(
+        'text-[13px]',
+        active ? 'text-white' : 'text-ink-soft',
+      )}
     >
       {label}
     </Text>
   );
 
   const classes = cn(
-    'h-7 items-center justify-center rounded-chip px-3',
-    active ? 'bg-primary' : 'bg-light',
+    'h-8 items-center justify-center rounded-chip px-3.5',
+    active
+      ? 'bg-primary border border-primary'
+      : 'bg-white border border-border',
     className,
   );
 

@@ -88,7 +88,12 @@ export function ScoreCircle({
       </Svg>
       <Text
         className="font-display text-ink"
-        style={{ fontSize: size * 0.3, color: hex }}
+        style={{
+          fontSize: size * 0.32,
+          color: hex,
+          fontVariant: ['tabular-nums'],
+          letterSpacing: -0.5,
+        }}
       >
         {display}
       </Text>

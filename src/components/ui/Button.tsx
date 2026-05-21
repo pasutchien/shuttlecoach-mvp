@@ -1,12 +1,22 @@
 /**
  * Button primitive (SPEC §11.1). Covers primary/secondary/text/destructive
  * variants and the default / disabled / loading states.
+ *
+ * Premium polish: filled buttons spring-scale to 0.97 on press and carry a
+ * colour-matched shadow. The scale lives on an outer Animated.View (styled via
+ * the `style` prop only — NativeWind classes are unreliable on Animated views).
  */
 import { ActivityIndicator, Pressable, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/src/lib/cn';
-import { colors } from '@/src/theme';
+import { colors, shadows } from '@/src/theme';
 import { hapticLight } from '@/src/lib/haptics';
+import { useReducedMotion } from '@/src/hooks/useReducedMotion';
 import { Text } from './Text';
 
 const button = cva(
@@ -39,6 +49,8 @@ const LABEL_COLOR: Record<NonNullable<ButtonProps['variant']>, string> = {
   text: 'text-primary',
 };
 
+const SPRING = { damping: 15, stiffness: 320, mass: 0.8 };
+
 export interface ButtonProps extends VariantProps<typeof button> {
   label: string;
   onPress?: () => void;
@@ -63,51 +75,75 @@ export function Button({
   testID,
 }: ButtonProps) {
   const v = variant ?? 'primary';
+  const reduced = useReducedMotion();
   const isDisabled = disabled || loading;
   const isFilled = v === 'primary' || v === 'orange' || v === 'destructive';
 
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const press = (to: number) => {
+    if (!reduced && !isDisabled) scale.value = withSpring(to, SPRING);
+  };
+
+  // Colour-matched lift for filled buttons (plain style object — reliable).
+  const liftShadow =
+    isFilled && !isDisabled
+      ? v === 'orange'
+        ? shadows.floatOrange
+        : v === 'destructive'
+          ? shadows.floatOrange
+          : shadows.floatBlue
+      : undefined;
+
   return (
-    <Pressable
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: isDisabled, busy: loading }}
-      accessibilityLabel={label}
-      disabled={isDisabled}
-      onPress={() => {
-        hapticLight();
-        onPress?.();
-      }}
-      className={cn(
-        button({ variant, size, block }),
-        // Disabled fill (SPEC §11.1): grey bg, muted text.
-        isDisabled && isFilled && 'bg-border',
-        isDisabled && !isFilled && 'opacity-40',
-        className,
-      )}
-      style={({ pressed }) => ({
-        opacity: pressed && !isDisabled ? 0.88 : 1,
-      })}
+    <Animated.View
+      style={[animStyle, block ? { width: '100%' } : undefined]}
     >
-      {loading ? (
-        <ActivityIndicator
-          color={isFilled ? colors.white : colors.primary}
-          size="small"
-        />
-      ) : (
-        <View className="flex-row items-center gap-2">
-          {icon}
-          <Text
-            variant="label"
-            className={cn(
-              'font-label',
-              isDisabled ? 'text-placeholder' : LABEL_COLOR[v],
-              size === 'lg' && 'text-[16px]',
-            )}
-          >
-            {label}
-          </Text>
-        </View>
-      )}
-    </Pressable>
+      <Pressable
+        testID={testID}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: isDisabled, busy: loading }}
+        accessibilityLabel={label}
+        disabled={isDisabled}
+        onPressIn={() => press(0.97)}
+        onPressOut={() => press(1)}
+        onPress={() => {
+          hapticLight();
+          onPress?.();
+        }}
+        style={liftShadow}
+        className={cn(
+          button({ variant, size, block }),
+          // Disabled fill (SPEC §11.1): grey bg, muted text.
+          isDisabled && isFilled && 'bg-border',
+          isDisabled && !isFilled && 'opacity-40',
+          className,
+        )}
+      >
+        {loading ? (
+          <ActivityIndicator
+            color={isFilled ? colors.white : colors.primary}
+            size="small"
+          />
+        ) : (
+          <View className="flex-row items-center gap-2">
+            {icon}
+            <Text
+              variant="label"
+              className={cn(
+                'font-label',
+                isDisabled ? 'text-placeholder' : LABEL_COLOR[v],
+                size === 'lg' && 'text-[16px]',
+              )}
+            >
+              {label}
+            </Text>
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
