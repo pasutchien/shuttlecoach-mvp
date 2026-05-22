@@ -15,7 +15,6 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ClipboardList, SlidersHorizontal } from 'lucide-react-native';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -23,7 +22,13 @@ import type { Analysis, StrokeType } from '@/src/types';
 import { STROKE_TYPES } from '@/src/types';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { useAnalysisStore } from '@/src/store';
-import { AnalysisHistoryCard, EmptyState, SelectSheet } from '@/src/components/shared';
+import {
+  AnalysisHistoryCard,
+  AppHeader,
+  EmptyState,
+  ScreenContainer,
+  SelectSheet,
+} from '@/src/components/shared';
 import type { SelectOption } from '@/src/components/shared';
 import { Badge, Chip, ConfirmationModal, Skeleton, Text } from '@/src/components/ui';
 import { colors } from '@/src/theme';
@@ -33,7 +38,6 @@ type SortKey = 'date' | 'score' | 'stroke';
 
 export default function HistoryScreen() {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
 
   const analyses = useAnalysisStore((s) => s.analyses);
   const loading = useAnalysisStore((s) => s.loading);
@@ -112,65 +116,58 @@ export default function HistoryScreen() {
 
   const sortLabel = sortOptions.find((o) => o.value === sortKey)?.label ?? '';
 
-  /** FlatList header: the navy title bar + filter chip row. */
-  const ListHeader = (
-    <>
-      {/* ── Header ────────────────────────────────────────────────────────── */}
-      <View
-        className="bg-navy px-5 pb-4"
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
-            <Text variant="h1" className="text-white text-[20px]">
-              {t('history.title')}
-            </Text>
-            {analyses.length > 0 ? (
-              <Badge
-                label={t('history.totalCount', { count: analyses.length })}
-                tone="primary"
-              />
-            ) : null}
-          </View>
-
-          {/* Sort button */}
-          <Pressable
-            onPress={() => setSortSheetOpen(true)}
-            accessibilityRole="button"
-            accessibilityLabel={t('history.sortBy')}
-            className="flex-row items-center gap-1.5 rounded-chip border border-white/30 px-3 py-1.5"
-          >
-            <SlidersHorizontal size={14} color={colors.white} />
-            <Text variant="caption" className="text-white text-[12px]">
-              {t('history.sortBy')}: {sortLabel}
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-
-      {/* ── Stroke filter chips ───────────────────────────────────────────── */}
-      <View className="bg-white border-b border-border">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 10, gap: 8 }}
-        >
-          <Chip
-            label={t('history.filterAll')}
-            active={strokeFilter === 'all'}
-            onPress={() => setStrokeFilter('all')}
+  /** Shared navy header: title + total-count badge + sort button. */
+  const Header = (
+    <AppHeader
+      title={t('history.title')}
+      titleAccessory={
+        analyses.length > 0 ? (
+          <Badge
+            label={t('history.totalCount', { count: analyses.length })}
+            tone="primary"
           />
-          {STROKE_TYPES.map((stroke) => (
-            <Chip
-              key={stroke}
-              label={t(`stroke.${stroke}`)}
-              active={strokeFilter === stroke}
-              onPress={() => setStrokeFilter(stroke)}
-            />
-          ))}
-        </ScrollView>
-      </View>
-    </>
+        ) : undefined
+      }
+      right={
+        <Pressable
+          onPress={() => setSortSheetOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('history.sortBy')}
+          hitSlop={8}
+          className="flex-row items-center gap-1.5 rounded-chip border border-white/30 px-3 py-2"
+        >
+          <SlidersHorizontal size={14} color={colors.white} />
+          <Text variant="caption" className="text-white text-[12px]">
+            {t('history.sortBy')}: {sortLabel}
+          </Text>
+        </Pressable>
+      }
+    />
+  );
+
+  /** Sticky stroke-filter chip row, rendered as the FlatList header. */
+  const FilterChips = (
+    <View className="bg-white border-b border-border">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 10, gap: 8 }}
+      >
+        <Chip
+          label={t('history.filterAll')}
+          active={strokeFilter === 'all'}
+          onPress={() => setStrokeFilter('all')}
+        />
+        {STROKE_TYPES.map((stroke) => (
+          <Chip
+            key={stroke}
+            label={t(`stroke.${stroke}`)}
+            active={strokeFilter === stroke}
+            onPress={() => setStrokeFilter(stroke)}
+          />
+        ))}
+      </ScrollView>
+    </View>
   );
 
   /** Skeletons shown while the store is hydrating. */
@@ -193,11 +190,11 @@ export default function HistoryScreen() {
   );
 
   return (
-    <View className="flex-1 bg-light">
+    <ScreenContainer header={Header}>
       <FlatList
         data={loading ? [] : sortedAnalyses}
         keyExtractor={(a) => a.id}
-        ListHeaderComponent={ListHeader}
+        ListHeaderComponent={FilterChips}
         stickyHeaderIndices={[0]}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -269,7 +266,7 @@ export default function HistoryScreen() {
           }
         }}
       />
-    </View>
+    </ScreenContainer>
   );
 }
 

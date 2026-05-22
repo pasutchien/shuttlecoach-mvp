@@ -11,15 +11,14 @@
  * Uses FlatList for virtualized rendering.
  */
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FlatList, View } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronLeft, Receipt } from 'lucide-react-native';
+import { Receipt } from 'lucide-react-native';
 import type { TransactionType } from '@/src/types';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { useCreditStore } from '@/src/store';
-import { EmptyState } from '@/src/components/shared';
-import { SegmentedControl, Text } from '@/src/components/ui';
+import { AppHeader, EmptyState, ScreenContainer } from '@/src/components/shared';
+import { SegmentedControl, Text, cardShadow } from '@/src/components/ui';
 import type { SegmentOption } from '@/src/components/ui';
 import { colors } from '@/src/theme';
 import { formatDate, formatNumber } from '@/src/lib/format';
@@ -35,7 +34,6 @@ const FILTER_TYPES: Record<FilterKey, TransactionType[] | null> = {
 
 export default function TransactionsScreen() {
   const { t, locale } = useTranslation();
-  const insets = useSafeAreaInsets();
   const transactions = useCreditStore((s) => s.transactions);
   const [filter, setFilter] = useState<FilterKey>('all');
 
@@ -52,47 +50,28 @@ export default function TransactionsScreen() {
     return transactions.filter((tx) => types.includes(tx.type));
   }, [transactions, filter]);
 
-  /** FlatList header: back button + title + segmented filter. */
-  const ListHeader = (
-    <>
-      {/* ── Header ────────────────────────────────────────────────────────── */}
-      <View
-        className="bg-navy flex-row items-center px-5 pb-4"
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          className="mr-3 h-11 w-11 items-center justify-center"
-        >
-          <ChevronLeft size={24} color={colors.white} />
-        </Pressable>
-        <Text variant="h1" className="flex-1 text-white text-[20px]">
-          {t('transactions.title')}
-        </Text>
-      </View>
-
-      {/* ── Filter ────────────────────────────────────────────────────────── */}
-      <View className="px-5 pt-4 pb-3">
-        <SegmentedControl
-          options={filterOptions}
-          value={filter}
-          onChange={setFilter}
-        />
-      </View>
-    </>
+  /** Sticky segmented filter, rendered as the FlatList header. */
+  const Filter = (
+    <View className="bg-light px-5 pt-4 pb-3">
+      <SegmentedControl
+        options={filterOptions}
+        value={filter}
+        onChange={setFilter}
+      />
+    </View>
   );
 
   return (
-    <View className="flex-1 bg-light">
+    <ScreenContainer
+      header={<AppHeader showBack title={t('transactions.title')} />}
+    >
       <FlatList
         data={filtered}
         keyExtractor={(tx) => tx.id}
-        ListHeaderComponent={ListHeader}
+        ListHeaderComponent={Filter}
         stickyHeaderIndices={[0]}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         ListEmptyComponent={
           <View className="flex-1 justify-center" style={{ marginTop: 80 }}>
             <EmptyState
@@ -111,14 +90,8 @@ export default function TransactionsScreen() {
 
           return (
             <View
-              className="mb-3 flex-row items-center justify-between rounded-card bg-white p-4"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 6,
-                elevation: 1,
-              }}
+              className="mx-5 mb-3 flex-row items-center justify-between rounded-card bg-white p-4"
+              style={cardShadow}
             >
               {/* Left: date + label */}
               <View className="flex-1 mr-3">
@@ -147,6 +120,6 @@ export default function TransactionsScreen() {
           );
         }}
       />
-    </View>
+    </ScreenContainer>
   );
 }

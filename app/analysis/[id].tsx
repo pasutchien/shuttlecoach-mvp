@@ -35,7 +35,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Pause,
@@ -53,9 +52,11 @@ import {
   Skeleton,
   Text,
   Toggle,
+  cardShadow,
   toast,
 } from '@/src/components/ui';
 import {
+  AppHeader,
   CheckpointBar,
   ConfettiOverlay,
   MistakeHighlightCard,
@@ -63,6 +64,7 @@ import {
   ProAvatar,
   RadarChart,
   ScoreCircle,
+  ScreenContainer,
   SelectSheet,
   SponsorBadge,
 } from '@/src/components/shared';
@@ -386,7 +388,7 @@ function ShareCardModal({
             <Text className="font-display text-[28px] text-primary">
               {t('common.appName')}
             </Text>
-            <Text variant="caption" className="text-slate mt-0.5">
+            <Text variant="caption" className="text-on-dark-muted mt-0.5">
               {t('splash.tagline')}
             </Text>
           </View>
@@ -406,7 +408,7 @@ function ShareCardModal({
                 {t(band.labelKey)}
               </Text>
               {proPlayer ? (
-                <Text variant="caption" className="text-slate mt-1">
+                <Text variant="caption" className="text-on-dark-muted mt-1">
                   {t('analysis.comparedWith', { name: proPlayer.name })}
                 </Text>
               ) : null}
@@ -416,7 +418,7 @@ function ShareCardModal({
           {/* Top mistake */}
           {topMistake ? (
             <View className="mx-5 mb-4 p-3 rounded-card bg-deep-navy">
-              <Text variant="caption" className="text-slate mb-0.5">
+              <Text variant="caption" className="text-on-dark-muted mb-0.5">
                 {t('analysis.shareTopMistake')}
               </Text>
               <Text variant="label" className="text-white text-[13px]">
@@ -694,7 +696,7 @@ export default function AnalysisScreen() {
         <Text variant="h1" className="text-white text-center">
           {t('error.title')}
         </Text>
-        <Text variant="body" className="text-slate text-center">
+        <Text variant="body" className="text-on-dark-muted text-center">
           {state.message}
         </Text>
         <Button
@@ -720,40 +722,32 @@ export default function AnalysisScreen() {
   }));
 
   return (
-    <View className="flex-1 bg-navy" style={{ paddingTop: insets.top }}>
-      {/* ------------------------------------------------------------------ */}
-      {/* TOOLBAR                                                              */}
-      {/* ------------------------------------------------------------------ */}
-      <View className="flex-row items-center justify-between px-4 pb-2">
-        <Pressable
-          onPress={() => {
+    <ScreenContainer
+      background="navy"
+      header={
+        <AppHeader
+          showBack
+          onBack={() => {
             hapticLight();
             router.replace('/(tabs)/home');
           }}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          className="flex-row items-center gap-1"
-        >
-          <ArrowLeft size={18} color={colors.white} />
-          <Text variant="label" className="text-white text-[14px]">
-            {t('common.back')}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => {
-            hapticLight();
-            setShowShareCard(true);
-          }}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={t('analysis.shareTitle')}
-        >
-          <Share2 size={22} color={colors.white} />
-        </Pressable>
-      </View>
-
+          right={
+            <Pressable
+              onPress={() => {
+                hapticLight();
+                setShowShareCard(true);
+              }}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('analysis.shareTitle')}
+              className="h-11 w-11 items-center justify-center"
+            >
+              <Share2 size={22} color={colors.white} />
+            </Pressable>
+          }
+        />
+      }
+    >
       {/* ------------------------------------------------------------------ */}
       {/* SPLIT-SCREEN VIDEO AREA                                              */}
       {/* ------------------------------------------------------------------ */}
@@ -904,10 +898,10 @@ export default function AnalysisScreen() {
 
         {/* Time display */}
         <View className="flex-row justify-between mb-2">
-          <Text variant="mono" className="text-slate text-[11px]">
+          <Text variant="mono" className="text-on-dark-muted text-[11px]">
             {currentTime.toFixed(1)}s
           </Text>
-          <Text variant="mono" className="text-slate text-[11px]">
+          <Text variant="mono" className="text-on-dark-muted text-[11px]">
             {duration.toFixed(1)}s
           </Text>
         </View>
@@ -956,7 +950,7 @@ export default function AnalysisScreen() {
               <Pressable
                 key={s}
                 onPress={() => setPlaybackSpeed(s)}
-                hitSlop={6}
+                hitSlop={10}
                 accessibilityRole="button"
                 accessibilityLabel={`Speed ${formatSpeed(s)}`}
                 accessibilityState={{ selected: speed === s }}
@@ -988,7 +982,7 @@ export default function AnalysisScreen() {
               hapticLight();
               setShowProPicker(true);
             }}
-            hitSlop={4}
+            hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={t('analysis.switchPro')}
             className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-input border border-white/20"
@@ -1003,7 +997,7 @@ export default function AnalysisScreen() {
 
           {/* Skeleton overlay toggle */}
           <View className="flex-row items-center gap-2">
-            <Text variant="caption" className="text-slate text-[12px]">
+            <Text variant="caption" className="text-on-dark-muted text-[12px]">
               {skeletonOn ? t('analysis.skeletonOn') : t('analysis.skeletonOff')}
             </Text>
             <Toggle
@@ -1083,16 +1077,7 @@ export default function AnalysisScreen() {
               {t('analysis.checkpointsTitle')}
             </Text>
 
-            <View
-              className="bg-white rounded-card p-4"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.06,
-                shadowRadius: 6,
-                elevation: 1,
-              }}
-            >
+            <View className="bg-white rounded-card p-4" style={cardShadow}>
               {/* Radar — at-a-glance spider view */}
               {radarPoints.length >= 3 ? (
                 <RadarChart
@@ -1166,6 +1151,6 @@ export default function AnalysisScreen() {
           onClose={() => setShowShareCard(false)}
         />
       ) : null}
-    </View>
+    </ScreenContainer>
   );
 }

@@ -4,17 +4,12 @@
  *
  * Route: /recording-tips (registered in the root Stack in app/_layout.tsx).
  */
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import {
-  Camera,
-  ChevronLeft,
-  Maximize,
-  Smartphone,
-  Sun,
-} from 'lucide-react-native';
+import { Camera, Maximize, Smartphone, Sun } from 'lucide-react-native';
 import { useTranslation } from '@/src/hooks/useTranslation';
+import { AppHeader, ScreenContainer } from '@/src/components/shared';
 import { Button, Card, Text } from '@/src/components/ui';
 import { colors } from '@/src/theme';
 
@@ -60,25 +55,9 @@ export default function RecordingTipsScreen() {
   ];
 
   return (
-    <View className="flex-1 bg-light">
-      {/* ── Custom header ─────────────────────────────────────────────────── */}
-      <View
-        className="bg-navy flex-row items-center px-5 pb-4"
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          className="mr-3 h-11 w-11 items-center justify-center"
-        >
-          <ChevronLeft size={24} color={colors.white} />
-        </Pressable>
-        <Text variant="h1" className="flex-1 text-white text-[20px]">
-          {t('recordingTips.title')}
-        </Text>
-      </View>
-
+    <ScreenContainer
+      header={<AppHeader showBack title={t('recordingTips.title')} />}
+    >
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
@@ -132,6 +111,6 @@ export default function RecordingTipsScreen() {
           />
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }

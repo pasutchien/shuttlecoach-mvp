@@ -606,8 +606,10 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
   ]);
 
   const handleTopUp = useCallback(() => {
-    // Keep sheet open (visible stays true in parent) and navigate to wallet
-    router.push('/(tabs)/wallet');
+    // Keep sheet open (visible stays true in parent) and navigate to wallet.
+    // `topup=1` tells Wallet to show a back chevron so the user can return
+    // here after purchasing (SPEC §6.4).
+    router.push('/(tabs)/wallet?topup=1');
   }, []);
 
   if (strokeType === null) return null;
@@ -774,6 +776,12 @@ export default function UploadScreen() {
     }
   }, [step]);
 
+  /** In-flow step back (S4–S6). The close (X) still exits the whole modal. */
+  const handleStepBack = useCallback(() => {
+    hapticLight();
+    setStep((s) => Math.max(0, s - 1) as Step);
+  }, []);
+
   const handlePaymentClose = useCallback(() => {
     setPaymentVisible(false);
     // Return to step 2 (court)
@@ -812,9 +820,25 @@ export default function UploadScreen() {
         </Pressable>
       </View>
 
-      {/* Step title */}
+      {/* Step title — with an in-flow Back text button on steps 2 & 3.
+          The slot keeps a fixed height so the title never shifts. */}
       <View className="px-5 pb-3">
-        <Text variant="h1" className="text-[20px] text-ink">
+        <View className="h-6 justify-center">
+          {step > 0 ? (
+            <Pressable
+              onPress={handleStepBack}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.back')}
+              hitSlop={8}
+              className="self-start"
+            >
+              <Text variant="label" className="text-primary text-[14px]">
+                {t('common.back')}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+        <Text variant="h1" className="text-[20px] text-ink mt-1">
           {step === 0
             ? t('upload.trimTitle')
             : step === 1

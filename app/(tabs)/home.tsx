@@ -9,13 +9,14 @@ import { useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { router } from 'expo-router';
 import { Coins, Video } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, Progress, Skeleton, Text, cardShadow } from '@/src/components/ui';
+import { Button, Card, Progress, Skeleton, Text, cardShadow } from '@/src/components/ui';
 import {
   AnalysisSummaryCard,
+  AppHeader,
   CoachingTipCard,
   EmptyState,
+  ScreenContainer,
   SponsorBadge,
 } from '@/src/components/shared';
 
@@ -39,7 +40,6 @@ function avgScore(scores: number[]): string {
 
 export default function HomeScreen() {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
 
   // ── Store subscriptions ───────────────────────────────────────────────────
   const balance = useCreditStore((s) => s.balance);
@@ -67,44 +67,50 @@ export default function HomeScreen() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <View className="flex-1 bg-light">
-      <ScrollView
-        className="flex-1"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 32 }}
-      >
-        {/* ═══════════════════════════════════════════════════════════════
-            NAVY HERO SECTION  (Zones A → D)
-            Bleeds under the status bar via paddingTop=insets.top.
-        ════════════════════════════════════════════════════════════════ */}
-        <View className="bg-navy" style={{ paddingTop: insets.top }}>
-
-          {/* ── Zone A: Header bar ───────────────────────────────────── */}
-          <View className="flex-row items-center justify-between px-5 py-3">
-            {/* App name wordmark */}
+    <ScreenContainer
+      header={
+        <AppHeader
+          /* Zone A — logo wordmark (left) + credit chip (right). */
+          leading={
             <Text
               className="font-display text-[18px] text-primary"
               accessibilityRole="header"
             >
               {t('common.appName')}
             </Text>
-
-            {/* Credit chip — taps to Wallet */}
+          }
+          right={
             <Pressable
               onPress={() => router.push('/(tabs)/wallet')}
               accessibilityRole="button"
               accessibilityLabel={`${balance} ${t('common.creditsLabel')}`}
-              className="flex-row items-center gap-1.5 rounded-full bg-deep-navy px-3 py-1.5"
+              hitSlop={8}
+              className="flex-row items-center gap-1.5 rounded-full bg-deep-navy px-3 py-2"
+              style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
             >
               <Coins size={14} color={colors.scoreAmber} />
               <Text className="font-mono text-[13px] text-white">
                 {balance}
               </Text>
-              <Text variant="caption" className="text-slate text-[11px]">
+              <Text variant="caption" className="text-on-dark-muted text-[11px]">
                 {t('common.creditsLabel')}
               </Text>
             </Pressable>
-          </View>
+          }
+        />
+      }
+    >
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 32 }}
+      >
+        {/* ═══════════════════════════════════════════════════════════════
+            NAVY HERO SECTION  (Zones B → D)
+            Zone A is the shared AppHeader above; this navy block continues
+            straight off it, so the hero still reads as one surface.
+        ════════════════════════════════════════════════════════════════ */}
+        <View className="bg-navy">
 
           {/* ── Zone B: Sponsor strip ────────────────────────────────── */}
           <View className="h-7 items-center justify-center bg-deep-navy">
@@ -119,25 +125,22 @@ export default function HomeScreen() {
             >
               {t('home.heroHeadline')}
             </Text>
-            <Text variant="body" className="mt-2 text-slate">
+            <Text variant="body" className="mt-2 text-on-dark-muted">
               {t('home.heroSubtext')}
             </Text>
           </View>
 
           {/* ── Zone D: Primary CTA ──────────────────────────────────── */}
           <View className="items-center pb-4 px-5">
-            <Pressable
-              onPress={() => router.push('/upload')}
-              accessibilityRole="button"
-              accessibilityLabel={t('home.uploadCta')}
-              className="w-[90%] h-14 flex-row items-center justify-center gap-2.5 rounded-card bg-orange"
-              style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
-            >
-              <Video size={20} color={colors.white} />
-              <Text className="font-label text-[16px] font-medium text-white">
-                {t('home.uploadCta')}
-              </Text>
-            </Pressable>
+            <View className="w-[90%]">
+              <Button
+                label={t('home.uploadCta')}
+                variant="orange"
+                size="lg"
+                icon={<Video size={20} color={colors.white} />}
+                onPress={() => router.push('/upload')}
+              />
+            </View>
 
             {/* Low-credits hint — only shown when balance is insufficient */}
             {balance < ANALYSIS_COST && (
@@ -271,7 +274,7 @@ export default function HomeScreen() {
           />
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 

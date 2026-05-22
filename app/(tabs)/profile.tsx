@@ -17,7 +17,6 @@
  */
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
   Award,
@@ -35,7 +34,9 @@ import { useTranslation } from '@/src/hooks/useTranslation';
 import { useUserStore, useAnalysisStore } from '@/src/store';
 import { PRO_PLAYERS, getProPlayer } from '@/src/constants/proPlayers';
 import {
+  AppHeader,
   ProgressChart,
+  ScreenContainer,
   SelectSheet,
   SponsorBadge,
   type ChartPoint,
@@ -53,6 +54,7 @@ import {
   Slider,
   Text,
   Toggle,
+  cardShadow,
   toast,
 } from '@/src/components/ui';
 import type { SegmentOption } from '@/src/components/ui';
@@ -129,7 +131,6 @@ type StrokeFilter = StrokeType | null;
 
 export default function ProfileScreen() {
   const { t, locale, setLocale } = useTranslation();
-  const insets = useSafeAreaInsets();
   const profile = useUserStore((s) => s.profile);
   const analyses = useAnalysisStore((s) => s.analyses);
 
@@ -261,17 +262,7 @@ export default function ProfileScreen() {
   /* ── render ─────────────────────────────────────────────────────────── */
 
   return (
-    <View className="flex-1 bg-light">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <View
-        className="bg-navy px-5 pb-4"
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        <Text variant="h1" className="text-white text-[20px]">
-          {t('profile.title')}
-        </Text>
-      </View>
-
+    <ScreenContainer header={<AppHeader title={t('profile.title')} />}>
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 48 }}
@@ -488,7 +479,7 @@ export default function ProfileScreen() {
         onConfirm={handleDeleteAccount}
         onCancel={() => setDeleteVisible(false)}
       />
-    </View>
+    </ScreenContainer>
   );
 }
 
@@ -507,19 +498,17 @@ function AchievementCard({
   return (
     <View
       className="rounded-card border p-3"
-      style={{
-        // Each card takes just under half the grid width (accounting for gap).
-        flex: 1,
-        minWidth: '45%',
-        opacity: earned ? 1 : 0.45,
-        borderColor: earned ? colors.mintTint : colors.border,
-        backgroundColor: earned ? colors.white : colors.lightAlt,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: earned ? 0.06 : 0,
-        shadowRadius: 4,
-        elevation: earned ? 1 : 0,
-      }}
+      style={[
+        {
+          // Each card takes just under half the grid width (accounting for gap).
+          flex: 1,
+          minWidth: '45%',
+          opacity: earned ? 1 : 0.45,
+          borderColor: earned ? colors.mintTint : colors.border,
+          backgroundColor: earned ? colors.white : colors.lightAlt,
+        },
+        earned ? cardShadow : null,
+      ]}
     >
       {/* Icon circle */}
       <View
@@ -565,15 +554,7 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <View className="mx-5 mb-4 rounded-card bg-white p-4 shadow-sm"
-      style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 6,
-        elevation: 1,
-      }}
-    >
+    <View className="mx-5 mb-4 rounded-card bg-white p-4" style={cardShadow}>
       <Text variant="h2" className="mb-3 text-[15px] text-slate uppercase tracking-wide">
         {title}
       </Text>

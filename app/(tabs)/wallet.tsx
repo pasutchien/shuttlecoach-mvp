@@ -2,7 +2,8 @@
  * S11 — Wallet & Store (SPEC §4 S11).
  *
  * Reachable via Tab 2 or as a push from the insufficient-credits flow (S7).
- * When pushed (router.canGoBack() === true) a back chevron is shown top-left.
+ * As a tab root it shows NO back arrow; the S7 top-up push passes `?topup=1`
+ * so a back chevron appears only in that pushed context.
  *
  * Zone A — current credit balance card with Transaction History link.
  * Zone B — package purchase grid (2-up row + full-width Pro Pack).
@@ -10,13 +11,12 @@
  */
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { ChevronLeft, CreditCard, Smartphone } from 'lucide-react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { CreditCard, Smartphone } from 'lucide-react-native';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { useCreditStore } from '@/src/store';
 import { ANALYSIS_COST, CREDIT_PACKAGES } from '@/src/constants/packages';
-import { PackageCard } from '@/src/components/shared';
+import { AppHeader, PackageCard, ScreenContainer } from '@/src/components/shared';
 import { Card, Text, toast } from '@/src/components/ui';
 import { colors } from '@/src/theme';
 import { formatNumber } from '@/src/lib/format';
@@ -24,9 +24,11 @@ import { hapticSuccess } from '@/src/lib/haptics';
 
 export default function WalletScreen() {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
   const balance = useCreditStore((s) => s.balance);
-  const canGoBack = router.canGoBack();
+  // Wallet is a tab root (no back arrow) — EXCEPT when pushed from the S7
+  // insufficient-credits flow, which passes `?topup=1` so the user can return.
+  const { topup } = useLocalSearchParams<{ topup?: string }>();
+  const isPushedForTopUp = topup === '1';
   const analysesLeft = Math.floor(balance / ANALYSIS_COST);
 
   // Per-package loading state (keyed by package id)
@@ -51,27 +53,11 @@ export default function WalletScreen() {
   const proPackage = CREDIT_PACKAGES.find((p) => p.mostPopular);
 
   return (
-    <View className="flex-1 bg-light">
-      {/* ── Header ────────────────────────────────────────────────────────── */}
-      <View
-        className="bg-navy flex-row items-center px-5 pb-4"
-        style={{ paddingTop: insets.top + 12 }}
-      >
-        {canGoBack ? (
-          <Pressable
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.back')}
-            className="mr-3 h-11 w-11 items-center justify-center"
-          >
-            <ChevronLeft size={24} color={colors.white} />
-          </Pressable>
-        ) : null}
-        <Text variant="h1" className="flex-1 text-white text-[20px]">
-          {t('wallet.title')}
-        </Text>
-      </View>
-
+    <ScreenContainer
+      header={
+        <AppHeader title={t('wallet.title')} showBack={isPushedForTopUp} />
+      }
+    >
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, paddingTop: 20 }}
@@ -165,7 +151,7 @@ export default function WalletScreen() {
           <PaymentChip icon={<CreditCard size={16} color={colors.slate} />} label="Visa / Mastercard" />
         </View>
       </ScrollView>
-    </View>
+    </ScreenContainer>
   );
 }
 

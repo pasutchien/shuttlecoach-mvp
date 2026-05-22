@@ -29,4 +29,7 @@ export const sizing = {
   iconButton: 44, // Minimum touch target
   tabBar: 83, // iPhone tab bar incl. safe area
   touchTarget: 44,
+  // Shared AppHeader content-row height (excludes the safe-area top inset).
+  // Every screen header is exactly `safeAreaTop + header` tall — see AppHeader.
+  header: 56,
 } as const;
