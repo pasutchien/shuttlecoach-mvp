@@ -8,10 +8,13 @@
  *  - A ConfirmationModal before committing the delete.
  *  - A delta badge on each card showing progress vs. the previous same-stroke
  *    analysis.
- *  - Loading skeleton rows and an empty state.
+ *  - Loading skeleton rows (via ListEmptyComponent when loading) and an empty
+ *    state.
+ *  - FlatList for virtualized rendering.
+ *  - Marks all unread analyses as seen on mount.
  */
-import { useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { ClipboardList, SlidersHorizontal } from 'lucide-react-native';
@@ -45,6 +48,11 @@ export default function HistoryScreen() {
 
   // Keep references to open Swipeable instances so we can close them.
   const swipeableRefs = useRef<Record<string, Swipeable | null>>({});
+
+  // Clear unread badge when the History tab is opened.
+  useEffect(() => {
+    useAnalysisStore.getState().markAllSeen();
+  }, []);
 
   const sortOptions: SelectOption[] = [
     { value: 'date', label: t('history.sortDate') },
@@ -104,8 +112,9 @@ export default function HistoryScreen() {
 
   const sortLabel = sortOptions.find((o) => o.value === sortKey)?.label ?? '';
 
-  return (
-    <View className="flex-1 bg-light">
+  /** FlatList header: the navy title bar + filter chip row. */
+  const ListHeader = (
+    <>
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <View
         className="bg-navy px-5 pb-4"
@@ -161,44 +170,55 @@ export default function HistoryScreen() {
           ))}
         </ScrollView>
       </View>
+    </>
+  );
 
-      {/* ── Content ───────────────────────────────────────────────────────── */}
-      {loading ? (
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}
-        >
-          {[0, 1, 2].map((i) => (
-            <View key={i} className="mb-3 flex-row gap-3 rounded-card bg-white p-3">
-              <Skeleton className="h-20 w-20 rounded-input" />
-              <View className="flex-1 gap-2 justify-center">
-                <Skeleton className="h-4 w-24 rounded" />
-                <Skeleton className="h-3 w-32 rounded" />
-                <Skeleton className="h-3 w-28 rounded" />
-              </View>
-              <Skeleton className="h-12 w-12 rounded-full self-center" />
-            </View>
-          ))}
-        </ScrollView>
-      ) : sortedAnalyses.length === 0 ? (
-        <View className="flex-1 justify-center">
-          <EmptyState
-            icon={ClipboardList}
-            title={t('empty.historyTitle')}
-            subtitle={t('empty.historySubtext')}
-            ctaLabel={t('empty.historyCta')}
-            onCtaPress={() => router.push('/upload')}
-          />
+  /** Skeletons shown while the store is hydrating. */
+  const LoadingSkeleton = (
+    <View
+      style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}
+    >
+      {[0, 1, 2].map((i) => (
+        <View key={i} className="mb-3 flex-row gap-3 rounded-card bg-white p-3">
+          <Skeleton className="h-20 w-20 rounded-input" />
+          <View className="flex-1 gap-2 justify-center">
+            <Skeleton className="h-4 w-24 rounded" />
+            <Skeleton className="h-3 w-32 rounded" />
+            <Skeleton className="h-3 w-28 rounded" />
+          </View>
+          <Skeleton className="h-12 w-12 rounded-full self-center" />
         </View>
-      ) : (
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {sortedAnalyses.map((analysis) => (
+      ))}
+    </View>
+  );
+
+  return (
+    <View className="flex-1 bg-light">
+      <FlatList
+        data={loading ? [] : sortedAnalyses}
+        keyExtractor={(a) => a.id}
+        ListHeaderComponent={ListHeader}
+        stickyHeaderIndices={[0]}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        ListEmptyComponent={
+          loading ? (
+            LoadingSkeleton
+          ) : (
+            <View className="flex-1 justify-center" style={{ marginTop: 80 }}>
+              <EmptyState
+                icon={ClipboardList}
+                title={t('empty.historyTitle')}
+                subtitle={t('empty.historySubtext')}
+                ctaLabel={t('empty.historyCta')}
+                onCtaPress={() => router.push('/upload')}
+              />
+            </View>
+          )
+        }
+        renderItem={({ item: analysis }) => (
+          <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
             <SwipeableRow
-              key={analysis.id}
               swipeableRef={(ref) => {
                 swipeableRefs.current[analysis.id] = ref;
               }}
@@ -216,9 +236,9 @@ export default function HistoryScreen() {
                 onPress={() => router.push(`/analysis/${analysis.id}`)}
               />
             </SwipeableRow>
-          ))}
-        </ScrollView>
-      )}
+          </View>
+        )}
+      />
 
       {/* ── Sort sheet ────────────────────────────────────────────────────── */}
       <SelectSheet

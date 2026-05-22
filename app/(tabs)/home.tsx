@@ -11,7 +11,7 @@ import { router } from 'expo-router';
 import { Coins, Video } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, Skeleton, Text, cardShadow } from '@/src/components/ui';
+import { Card, Progress, Skeleton, Text, cardShadow } from '@/src/components/ui';
 import {
   AnalysisSummaryCard,
   CoachingTipCard,
@@ -23,15 +23,10 @@ import { useTranslation } from '@/src/hooks/useTranslation';
 import { useAnalysisStore, useCreditStore } from '@/src/store';
 import { colors } from '@/src/theme';
 import { tipOfTheDay } from '@/src/constants/tips';
+import { analysesThisWeek } from '@/src/lib/achievements';
+import { ANALYSIS_COST } from '@/src/constants/packages';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Count analyses with createdAt within the last 7 days. */
-function countThisWeek(analyses: { createdAt: string }[]): number {
-  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  return analyses.filter((a) => new Date(a.createdAt).getTime() >= cutoff)
-    .length;
-}
 
 /** Round to 1 decimal place; returns '-' if no analyses. */
 function avgScore(scores: number[]): string {
@@ -67,7 +62,8 @@ export default function HomeScreen() {
   // ── Stats derived from analyses ───────────────────────────────────────────
   const scores = analyses.map((a) => a.overallScore);
   const bestScore = scores.length > 0 ? Math.max(...scores) : null;
-  const weekCount = countThisWeek(analyses);
+  const weekCount = analysesThisWeek(analyses);
+  const WEEK_GOAL = 2;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -129,7 +125,7 @@ export default function HomeScreen() {
           </View>
 
           {/* ── Zone D: Primary CTA ──────────────────────────────────── */}
-          <View className="items-center pb-8 px-5">
+          <View className="items-center pb-4 px-5">
             <Pressable
               onPress={() => router.push('/upload')}
               accessibilityRole="button"
@@ -142,6 +138,21 @@ export default function HomeScreen() {
                 {t('home.uploadCta')}
               </Text>
             </Pressable>
+
+            {/* Low-credits hint — only shown when balance is insufficient */}
+            {balance < ANALYSIS_COST && (
+              <Pressable
+                onPress={() => router.push('/(tabs)/wallet')}
+                accessibilityRole="button"
+                accessibilityLabel={t('home.lowCreditsHint')}
+                className="mt-3 w-[90%] rounded-card bg-score-amber/12 px-4 py-2.5"
+                style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+              >
+                <Text variant="caption" className="text-score-amber text-center text-[12px]">
+                  {t('home.lowCreditsHint')}
+                </Text>
+              </Pressable>
+            )}
           </View>
         </View>
 
@@ -149,22 +160,49 @@ export default function HomeScreen() {
             LIGHT SECTION  (Zones E → F)
         ════════════════════════════════════════════════════════════════ */}
 
-        {/* ── Professional extras: stat cards ─────────────────────────
+        {/* ── Professional extras: stat cards + weekly activity ───────
             Hidden on cold start — stat cards full of "0 / —" alongside the
             empty state below would be two conflicting "empty" signals. */}
         {analyses.length > 0 && (
-          <View className="flex-row gap-3 px-5 pt-6">
-            <StatCard
-              label={t('home.statAnalyses')}
-              value={weekCount.toString()}
-              caption={t('home.thisWeek', { count: weekCount })}
-            />
-            <StatCard
-              label={t('home.statBestScore')}
-              value={bestScore !== null ? bestScore.toString() : '—'}
-            />
-            <StatCard label={t('home.statAvgScore')} value={avgScore(scores)} />
-          </View>
+          <>
+            <View className="flex-row gap-3 px-5 pt-6">
+              <StatCard
+                label={t('home.statAnalyses')}
+                value={weekCount.toString()}
+                caption={t('home.thisWeek', { count: weekCount })}
+              />
+              <StatCard
+                label={t('home.statBestScore')}
+                value={bestScore !== null ? bestScore.toString() : '—'}
+              />
+              <StatCard label={t('home.statAvgScore')} value={avgScore(scores)} />
+            </View>
+
+            {/* Weekly activity indicator */}
+            <View className="mx-5 mt-3">
+              <Card className="py-3 px-4 gap-2">
+                <View className="flex-row items-center justify-between">
+                  <Text variant="caption" className="text-slate uppercase tracking-wide text-[11px]">
+                    {t('home.weekActivity')}
+                  </Text>
+                  <Text variant="label" className="text-ink text-[13px]">
+                    {t('home.weekActivityValue', { count: weekCount, goal: WEEK_GOAL })}
+                  </Text>
+                </View>
+                <Progress
+                  value={Math.min(1, weekCount / WEEK_GOAL)}
+                  height={5}
+                  fillClassName={weekCount >= WEEK_GOAL ? 'bg-score-green' : 'bg-primary'}
+                  trackClassName="bg-border"
+                />
+                <Text variant="caption" className={weekCount >= WEEK_GOAL ? 'text-score-green text-[11px]' : 'text-slate text-[11px]'}>
+                  {weekCount >= WEEK_GOAL
+                    ? t('home.weekGoalMet')
+                    : t('home.weekGoalProgress', { remaining: WEEK_GOAL - weekCount })}
+                </Text>
+              </Card>
+            </View>
+          </>
         )}
 
         {/* ── Zone E: Recent Analyses ──────────────────────────────── */}

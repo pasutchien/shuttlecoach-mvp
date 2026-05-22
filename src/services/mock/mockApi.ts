@@ -28,7 +28,7 @@ import {
 import { DRILLS } from '@/src/constants/drills';
 import { PRO_PLAYERS, matchProPlayer } from '@/src/constants/proPlayers';
 import { buildAnalysis } from './generate';
-import { getDb, loadDb, persist } from './db';
+import { getDb, loadDb, persist, resetDb } from './db';
 
 /* --- timing knobs --------------------------------------------------------- */
 
@@ -131,6 +131,17 @@ export const mockApi: ShuttleCoachApi = {
     db.profile = { ...db.profile, ...patch };
     await persist();
     return db.profile;
+  },
+
+  async signOut(): Promise<void> {
+    await delay(280);
+    // The mock has no auth — clearing the DB returns to a brand-new user.
+    await resetDb('empty');
+  },
+
+  async deleteAccount(): Promise<void> {
+    await delay(360);
+    await resetDb('empty');
   },
 
   async getCreditBalance(): Promise<{ credits: number }> {

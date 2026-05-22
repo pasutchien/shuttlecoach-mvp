@@ -41,7 +41,9 @@
       "Bash(cd /tmp)",
       "Bash(curl -s \"https://shuttlecoach-mvp.vercel.app/\" -o vc_index.html -w \"HTTP %{http_code} | %{content_type} | %{size_download} bytes\\\\n\")",
       "Bash(curl -s \"https://shuttlecoach-mvp.vercel.app/_expo/static/js/web/entry-6878f0fad353e88c12d52c76350b4881.js\" -o vc_bundle.js -w \"HTTP %{http_code} | %{content_type} | %{size_download} bytes\\\\n\")",
-      "Bash(curl -s \"https://shuttlecoach-mvp.vercel.app/login\" -o vc_login.html -w \"HTTP %{http_code} | %{content_type} | %{size_download} bytes\\\\n\")"
+      "Bash(curl -s \"https://shuttlecoach-mvp.vercel.app/login\" -o vc_login.html -w \"HTTP %{http_code} | %{content_type} | %{size_download} bytes\\\\n\")",
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx expo install react-native-view-shot 2>&1 | Select-Object -Last 4)",
+      "PowerShell($env:Path = \"$env:LOCALAPPDATA\\\\node-portable\\\\node-v24.15.0-win-x64;$env:Path\"; Set-Location \"C:\\\\claude-proj\\\\shuttlecoach\\\\mvp\"; npx tsc --noEmit 2>&1 | Select-String -NotMatch \"npm notice\"; Write-Output \"TSC=$LASTEXITCODE\")"
     ]
   }
 }

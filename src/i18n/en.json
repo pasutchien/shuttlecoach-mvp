@@ -95,7 +95,12 @@
     "streak": "{{count}}-day streak",
     "statAnalyses": "Analyses",
     "statBestScore": "Best Score",
-    "statAvgScore": "Avg Score"
+    "statAvgScore": "Avg Score",
+    "weekActivity": "This week",
+    "weekActivityValue": "{{count}} / {{goal}}",
+    "weekGoalMet": "Weekly goal reached — great work!",
+    "weekGoalProgress": "{{remaining}} more to hit your weekly goal",
+    "lowCreditsHint": "Low on Credits — top up to analyze your next clip."
   },
   "upload": {
     "stepTrim": "Trim",
@@ -153,7 +158,14 @@
     "tip2": "Tip: Keep your non-racket arm up for balance through contact.",
     "tip3": "Tip: Transfer your weight from back foot to front as you swing.",
     "tip4": "Tip: Contact the shuttle as high as you comfortably can.",
-    "tip5": "Tip: Relax your grip until the instant of contact for extra speed."
+    "tip5": "Tip: Relax your grip until the instant of contact for extra speed.",
+    "strokeTip": {
+      "Smash": "Smash tip: Power comes from hip and shoulder rotation, not arm strength.",
+      "Drop_Shot": "Drop shot tip: A gentle, deceptive touch beats raw power at the net.",
+      "Clear": "Clear tip: Aim deep — a good clear buys you time to recover position.",
+      "Drive": "Drive tip: Keep the racket head up and meet the shuttle out in front.",
+      "Net_Kill": "Net kill tip: React early and keep the wrist firm for a sharp finish."
+    }
   },
   "analysis": {
     "savedToast": "Saved to History",
@@ -210,7 +222,10 @@
     "purchaseToast": "+{{credits}} Credits added — {{label}}",
     "bestForCasual": "Casual / try it out",
     "bestForRegular": "Regular players (2x/week)",
-    "bestForDedicated": "Dedicated improvers"
+    "bestForDedicated": "Dedicated improvers",
+    "analysesLeft": "Enough for {{count}} analyses",
+    "analysesLeftOne": "Enough for 1 analysis",
+    "lowBalance": "Running low — top up to keep analyzing."
   },
   "transactions": {
     "title": "Transaction History",
@@ -257,7 +272,49 @@
     "deleteConfirmBody": "This permanently erases your profile, credits and analysis history. This cannot be undone.",
     "heightWeight": "Height: {{height}} cm  |  Weight: {{weight}} kg",
     "heightOnly": "Height: {{height}} cm",
-    "saveToast": "Profile updated"
+    "saveToast": "Profile updated",
+    "progressFilterAll": "All strokes"
+  },
+  "achv": {
+    "title": "Achievements",
+    "earnedCount": "{{earned}} of {{total}} unlocked",
+    "firstAnalysis": {
+      "title": "First Steps",
+      "desc": "Completed your first analysis"
+    },
+    "fiveAnalyses": {
+      "title": "Getting Serious",
+      "desc": "Completed 5 analyses"
+    },
+    "highScorer": {
+      "title": "Pro Form",
+      "desc": "Scored 80 or higher on a stroke"
+    },
+    "improver": {
+      "title": "On the Rise",
+      "desc": "Improved your score on a stroke"
+    },
+    "weekWarrior": {
+      "title": "Week Warrior",
+      "desc": "Two analyses within a week"
+    },
+    "allRounder": {
+      "title": "All-Rounder",
+      "desc": "Analysed four different strokes"
+    }
+  },
+  "recordingTips": {
+    "title": "How to Record a Great Clip",
+    "intro": "A few seconds of setup gets you the most accurate AI analysis.",
+    "tip1Title": "Film from the side",
+    "tip1Body": "Place the phone side-on to you, level with your hip — not in front or behind.",
+    "tip2Title": "Keep your whole body in frame",
+    "tip2Body": "Your feet and racket should stay visible through the entire swing.",
+    "tip3Title": "Use bright, even light",
+    "tip3Body": "Indoor court lighting is ideal. Avoid strong backlight or deep shadow.",
+    "tip4Title": "Hold the camera steady",
+    "tip4Body": "Prop the phone up or ask a friend to hold it still. Record in 720p or higher.",
+    "done": "Got it"
   },
   "empty": {
     "homeTitle": "No analyses yet",

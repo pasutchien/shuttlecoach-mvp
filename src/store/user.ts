@@ -3,7 +3,7 @@
  */
 import { create } from 'zustand';
 import type { UserProfile } from '@/src/types';
-import { api, type ProfileInput, resetDb } from '@/src/services';
+import { api, type ProfileInput } from '@/src/services';
 import { useCreditStore } from './credits';
 import { useAnalysisStore } from './analyses';
 
@@ -45,14 +45,14 @@ export const useUserStore = create<UserState>((set) => ({
   },
 
   signOut: async () => {
-    await resetDb('empty');
+    await api.signOut();
     set({ profile: null });
     useCreditStore.getState().reset();
     useAnalysisStore.getState().reset();
   },
 
   deleteAccount: async () => {
-    await resetDb('empty');
+    await api.deleteAccount();
     set({ profile: null });
     useCreditStore.getState().reset();
     useAnalysisStore.getState().reset();

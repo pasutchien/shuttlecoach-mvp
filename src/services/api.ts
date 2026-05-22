@@ -52,6 +52,15 @@ export interface ShuttleCoachApi {
    */
   updateUserProfile(patch: ProfileInput): Promise<UserProfile>;
 
+  /** Sign out — ends the session (the real backend invalidates the token). */
+  signOut(): Promise<void>;
+
+  /**
+   * Permanently delete the account and all its data (SPEC S14). The real
+   * backend must erase the user server-side, not just clear the session.
+   */
+  deleteAccount(): Promise<void>;
+
   /* --- Credits & store --------------------------------------------------- */
 
   /** Current credit balance. */

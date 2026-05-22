@@ -16,6 +16,8 @@ export { CoachingTipCard } from './CoachingTipCard';
 export { PackageCard } from './PackageCard';
 export { ProgressChart } from './ProgressChart';
 export type { ChartPoint } from './ProgressChart';
+export { RadarChart } from './RadarChart';
+export type { RadarPoint } from './RadarChart';
 export { PoseSkeleton } from './PoseSkeleton';
 export { ConfettiOverlay } from './ConfettiOverlay';
 export { SelectSheet } from './SelectSheet';

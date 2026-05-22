@@ -15,7 +15,7 @@ import { router } from 'expo-router';
 import { ChevronLeft, CreditCard, Smartphone } from 'lucide-react-native';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { useCreditStore } from '@/src/store';
-import { CREDIT_PACKAGES } from '@/src/constants/packages';
+import { ANALYSIS_COST, CREDIT_PACKAGES } from '@/src/constants/packages';
 import { PackageCard } from '@/src/components/shared';
 import { Card, Text, toast } from '@/src/components/ui';
 import { colors } from '@/src/theme';
@@ -27,6 +27,7 @@ export default function WalletScreen() {
   const insets = useSafeAreaInsets();
   const balance = useCreditStore((s) => s.balance);
   const canGoBack = router.canGoBack();
+  const analysesLeft = Math.floor(balance / ANALYSIS_COST);
 
   // Per-package loading state (keyed by package id)
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -89,6 +90,21 @@ export default function WalletScreen() {
               <Text variant="caption" className="mt-1 text-slate">
                 {t('wallet.balanceSubline')}
               </Text>
+
+              {/* Analyses-left indicator */}
+              {analysesLeft === 0 ? (
+                <View className="mt-2 self-start rounded-card bg-score-amber/12 px-3 py-1.5">
+                  <Text variant="caption" className="text-score-amber text-[12px]">
+                    {t('wallet.lowBalance')}
+                  </Text>
+                </View>
+              ) : (
+                <Text variant="caption" className="mt-2 text-slate text-[12px]">
+                  {analysesLeft === 1
+                    ? t('wallet.analysesLeftOne')
+                    : t('wallet.analysesLeft', { count: analysesLeft })}
+                </Text>
+              )}
             </View>
             <Pressable
               onPress={() => router.push('/wallet/transactions')}

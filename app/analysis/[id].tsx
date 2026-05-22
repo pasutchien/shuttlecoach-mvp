@@ -3,7 +3,8 @@
  *
  * Hero screen of the product. Split-screen synchronized video comparison
  * (user vs. pro), animated score reveal, mistake highlight cards, checkpoint
- * breakdown, and the S10 drill detail bottom sheet — all in one file.
+ * breakdown with RadarChart at-a-glance view, and the S10 drill detail bottom
+ * sheet — all in one file.
  *
  * Route: /analysis/[id]
  * Params:
@@ -42,6 +43,7 @@ import {
   Share2,
   X,
 } from 'lucide-react-native';
+import { captureRef } from 'react-native-view-shot';
 
 import type { Analysis, Drill, MistakeCard, ProPlayer } from '@/src/types';
 import { api, ApiError } from '@/src/services';
@@ -59,6 +61,7 @@ import {
   MistakeHighlightCard,
   PoseSkeleton,
   ProAvatar,
+  RadarChart,
   ScoreCircle,
   SelectSheet,
   SponsorBadge,
@@ -305,24 +308,55 @@ function ShareCardModal({
   const band = scoreBand(analysis.overallScore);
   const topMistake = analysis.mistakes[0];
 
+  /** Ref placed on the branded card View for image capture. */
+  const cardRef = useRef<View>(null);
+
   const handleShare = useCallback(async () => {
-    if (Platform.OS === 'web') return;
+    // Web: keep text share (view-shot is unreliable on web).
+    if (Platform.OS === 'web') {
+      try {
+        await Share.share({
+          title: t('common.appName'),
+          message: [
+            `${t('common.appName')} — ${t('stroke.' + analysis.strokeType)}`,
+            `${t('analysis.shareScore')}: ${analysis.overallScore}/100`,
+            topMistake
+              ? `${t('analysis.shareTopMistake')}: ${topMistake.title}`
+              : '',
+            t('common.sponsor'),
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        });
+      } catch {
+        // User cancelled or share not available.
+      }
+      return;
+    }
+
+    // Native: capture the branded card as a PNG and share it.
     try {
-      await Share.share({
-        title: t('common.appName'),
-        message: [
-          `🏸 ${t('common.appName')} — ${t('stroke.' + analysis.strokeType)}`,
-          `${t('analysis.shareScore')}: ${analysis.overallScore}/100`,
-          topMistake
-            ? `${t('analysis.shareTopMistake')}: ${topMistake.title}`
-            : '',
-          t('common.sponsor'),
-        ]
-          .filter(Boolean)
-          .join('\n'),
-      });
+      const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
+      await Share.share({ url: uri });
     } catch {
-      // User cancelled or web
+      // Fallback: text share if capture or native share fails.
+      try {
+        await Share.share({
+          title: t('common.appName'),
+          message: [
+            `${t('common.appName')} — ${t('stroke.' + analysis.strokeType)}`,
+            `${t('analysis.shareScore')}: ${analysis.overallScore}/100`,
+            topMistake
+              ? `${t('analysis.shareTopMistake')}: ${topMistake.title}`
+              : '',
+            t('common.sponsor'),
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        });
+      } catch {
+        // User cancelled — silently ignore.
+      }
     }
   }, [analysis, t, topMistake]);
 
@@ -340,7 +374,13 @@ function ShareCardModal({
           onPress={onClose}
           accessibilityLabel={t('common.close')}
         />
-        <View className="w-full max-w-[320px] rounded-2xl bg-navy overflow-hidden">
+
+        {/* Branded card — captured by captureRef on native */}
+        <View
+          ref={cardRef}
+          collapsable={false}
+          className="w-full max-w-[320px] rounded-2xl bg-navy overflow-hidden"
+        >
           {/* Header stripe */}
           <View className="bg-deep-navy px-5 pt-5 pb-4">
             <Text className="font-display text-[28px] text-primary">
@@ -390,7 +430,7 @@ function ShareCardModal({
             <SponsorBadge variant="plain" />
           </View>
 
-          {/* Actions */}
+          {/* Actions (outside the captured area is ideal but the card wraps them) */}
           <View className="px-5 pb-5 gap-2">
             <Button
               label={t('analysis.shareTitle')}
@@ -672,6 +712,12 @@ export default function AnalysisScreen() {
   const { analysis } = state;
   const band = scoreBand(analysis.overallScore);
   const scrubFraction = duration > 0 ? currentTime / duration : 0;
+
+  /** RadarChart points — one per checkpoint. */
+  const radarPoints = analysis.checkpoints.map((cp) => ({
+    label: t('checkpoint.' + cp.key),
+    value: cp.score,
+  }));
 
   return (
     <View className="flex-1 bg-navy" style={{ paddingTop: insets.top }}>
@@ -1030,20 +1076,47 @@ export default function AnalysisScreen() {
           </View>
         )}
 
-        {/* Checkpoint breakdown */}
+        {/* ── Checkpoint breakdown: radar + bar detail ───────────────────── */}
         {analysis.checkpoints.length > 0 ? (
           <View className="px-4 pt-2 pb-2">
             <Text variant="h2" className="text-ink text-[16px] mb-3">
               {t('analysis.checkpointsTitle')}
             </Text>
-            <View className="bg-white rounded-card p-4 gap-3">
-              {analysis.checkpoints.map((cp) => (
-                <CheckpointBar
-                  key={cp.key}
-                  label={t('checkpoint.' + cp.key)}
-                  score={cp.score}
+
+            <View
+              className="bg-white rounded-card p-4"
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 6,
+                elevation: 1,
+              }}
+            >
+              {/* Radar — at-a-glance spider view */}
+              {radarPoints.length >= 3 ? (
+                <RadarChart
+                  points={radarPoints}
+                  size={260}
+                  className="mb-4"
                 />
-              ))}
+              ) : null}
+
+              {/* Divider */}
+              {radarPoints.length >= 3 ? (
+                <View className="border-t border-border-soft mb-4" />
+              ) : null}
+
+              {/* Bar breakdown — detailed per-checkpoint scores */}
+              <View className="gap-3">
+                {analysis.checkpoints.map((cp) => (
+                  <CheckpointBar
+                    key={cp.key}
+                    label={t('checkpoint.' + cp.key)}
+                    score={cp.score}
+                  />
+                ))}
+              </View>
             </View>
           </View>
         ) : null}

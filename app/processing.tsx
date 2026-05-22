@@ -14,7 +14,7 @@
  *  - Cancel flow: confirmation modal → refund → home.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -35,7 +35,8 @@ import { colors } from '@/src/theme';
 import { api } from '@/src/services';
 import { useCreditStore } from '@/src/store/credits';
 import { useAnalysisStore } from '@/src/store/analyses';
-import { PROCESSING_TIPS } from '@/src/constants/tips';
+import { tipsForStroke } from '@/src/constants/tips';
+import type { StrokeType } from '@/src/types';
 
 /* -------------------------------------------------------------------------- */
 /*  Constants                                                                   */
@@ -53,12 +54,20 @@ export default function ProcessingScreen() {
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
 
-  const { jobId, first } = useLocalSearchParams<{
+  const { jobId, first, stroke } = useLocalSearchParams<{
     jobId: string;
     first?: string;
+    stroke?: string;
   }>();
 
   const isFirst = first === '1';
+
+  // Resolve the tips pool: stroke-specific tip first, then general pool.
+  // `stroke` from useLocalSearchParams is `string | string[] | undefined`; we
+  // treat any non-string or absent value as null (falls back to general pool).
+  const strokeParam: StrokeType | null =
+    typeof stroke === 'string' ? (stroke as StrokeType) : null;
+  const activeTips = tipsForStroke(strokeParam);
 
   /* ---- progress state ---- */
   const [progress, setProgress] = useState(0);
@@ -103,11 +112,14 @@ export default function ProcessingScreen() {
   /* ---- Tip rotation ---- */
   useEffect(() => {
     tipRef.current = setInterval(() => {
-      setTipIndex((i) => (i + 1) % PROCESSING_TIPS.length);
+      setTipIndex((i) => (i + 1) % activeTips.length);
     }, TIP_INTERVAL_MS);
     return () => {
       if (tipRef.current !== null) clearInterval(tipRef.current);
     };
+  // activeTips is derived from the stroke param which is stable for the lifetime
+  // of this screen, so including it here is safe and satisfies the linter.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ---- Polling ---- */
@@ -228,15 +240,11 @@ export default function ProcessingScreen() {
 
   const handleGetHelp = useCallback(() => {
     setErrorModalVisible(false);
-    Alert.alert(
-      t('error.recordingTipsTitle'),
-      t('error.recordingTips'),
-      [{ text: t('common.done'), style: 'default' }],
-    );
-  }, [t]);
+    router.push('/recording-tips');
+  }, []);
 
   /* ---- Render ---- */
-  const currentTip = PROCESSING_TIPS[tipIndex];
+  const currentTip = activeTips[tipIndex];
 
   return (
     <View

@@ -55,6 +55,12 @@ export const realApi: ShuttleCoachApi = {
   updateUserProfile(_patch: ProfileInput): Promise<UserProfile> {
     return notImplemented('updateUserProfile');
   },
+  signOut(): Promise<void> {
+    return notImplemented('signOut');
+  },
+  deleteAccount(): Promise<void> {
+    return notImplemented('deleteAccount');
+  },
   getCreditBalance(): Promise<{ credits: number }> {
     return notImplemented('getCreditBalance');
   },

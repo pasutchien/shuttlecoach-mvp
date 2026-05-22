@@ -1,16 +1,18 @@
 /**
  * Bottom tab bar (SPEC §3.2). 4 persistent tabs; the Wallet tab shows the
- * credit balance as a numeric badge.
+ * credit balance as a numeric badge. The History tab shows a badge for
+ * unread (not-yet-viewed) analyses.
  */
 import { Tabs } from 'expo-router';
 import { Clock, Home, User, Wallet } from 'lucide-react-native';
 import { colors } from '@/src/theme';
 import { useTranslation } from '@/src/hooks/useTranslation';
-import { useCreditStore } from '@/src/store';
+import { useCreditStore, useAnalysisStore } from '@/src/store';
 
 export default function TabsLayout() {
   const { t } = useTranslation();
   const balance = useCreditStore((s) => s.balance);
+  const unread = useAnalysisStore((s) => s.unreadCount);
 
   return (
     <Tabs
@@ -52,6 +54,8 @@ export default function TabsLayout() {
         name="history"
         options={{
           title: t('nav.history'),
+          tabBarBadge: unread > 0 ? unread : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.orange, fontSize: 10 },
           tabBarIcon: ({ color, size }) => <Clock color={color} size={size} />,
         }}
       />

@@ -7,7 +7,8 @@
  *  - Athletic Preferences (fav pro, play style, experience).
  *  - Notification toggles.
  *  - Language selector.
- *  - Professional extras: Progress chart + Achievements badge (SPEC §10).
+ *  - Professional extras: Progress chart (with per-stroke filter) + full
+ *    Achievements grid (SPEC §10).
  *  - Account actions (Sign Out / Delete Account).
  *  - About (link, SponsorBadge, version).
  *
@@ -18,9 +19,18 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { ChevronRight } from 'lucide-react-native';
-import type { ExperienceLevel, PlayStyle, UserProfile } from '@/src/types';
-import { EXPERIENCE_LEVELS } from '@/src/types';
+import {
+  Award,
+  ChevronRight,
+  Flame,
+  Layers,
+  Star,
+  Target,
+  TrendingUp,
+  type LucideIcon,
+} from 'lucide-react-native';
+import type { ExperienceLevel, PlayStyle, StrokeType, UserProfile } from '@/src/types';
+import { EXPERIENCE_LEVELS, STROKE_TYPES } from '@/src/types';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { useUserStore, useAnalysisStore } from '@/src/store';
 import { PRO_PLAYERS, getProPlayer } from '@/src/constants/proPlayers';
@@ -33,9 +43,9 @@ import {
 } from '@/src/components/shared';
 import {
   Avatar,
-  Badge,
   BottomSheet,
   Button,
+  Chip,
   ConfirmationModal,
   Input,
   NumberStepper,
@@ -49,6 +59,8 @@ import type { SegmentOption } from '@/src/components/ui';
 import { colors } from '@/src/theme';
 import { formatDate } from '@/src/lib/format';
 import type { AppLocale } from '@/src/i18n';
+import { getAchievements } from '@/src/lib/achievements';
+import type { Achievement } from '@/src/lib/achievements';
 
 /* ─── types ─────────────────────────────────────────────────────────────── */
 
@@ -61,6 +73,18 @@ type ProfilePatch = {
   favoriteProId?: string;
   playStyle: PlayStyle;
   experienceLevel: ExperienceLevel;
+};
+
+/* ─── icon map ───────────────────────────────────────────────────────────── */
+
+/** Typed map from Achievement.icon string to the corresponding Lucide component. */
+const ACHIEVEMENT_ICON_MAP: Record<Achievement['icon'], LucideIcon> = {
+  Award,
+  Flame,
+  Target,
+  TrendingUp,
+  Layers,
+  Star,
 };
 
 /* ─── helpers ────────────────────────────────────────────────────────────── */
@@ -98,6 +122,9 @@ function buildProfilePatch(profile: UserProfile): ProfilePatch {
   };
 }
 
+/** Null means "All" filter is active. */
+type StrokeFilter = StrokeType | null;
+
 /* ─── component ──────────────────────────────────────────────────────────── */
 
 export default function ProfileScreen() {
@@ -111,6 +138,9 @@ export default function ProfileScreen() {
   const [patch, setPatch] = useState<ProfilePatch | null>(null);
   const [proSheetOpen, setProSheetOpen] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // Per-stroke filter for progress chart
+  const [strokeFilter, setStrokeFilter] = useState<StrokeFilter>(null);
 
   // Account modals
   const [signOutVisible, setSignOutVisible] = useState(false);
@@ -157,9 +187,13 @@ export default function ProfileScreen() {
     subtitle: `${p.nationality} · ${p.heightCm} cm`,
   }));
 
-  /* ── Progress chart data ───────────────────────────────────────────── */
+  /* ── Progress chart data (filtered) ───────────────────────────────── */
 
-  const chartPoints: ChartPoint[] = [...analyses]
+  const filteredAnalyses = strokeFilter
+    ? analyses.filter((a) => a.strokeType === strokeFilter)
+    : analyses;
+
+  const chartPoints: ChartPoint[] = [...filteredAnalyses]
     .sort(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
@@ -168,6 +202,11 @@ export default function ProfileScreen() {
       label: formatDate(a.createdAt, locale).split(' ').slice(0, 2).join(' '),
       value: a.overallScore,
     }));
+
+  /* ── Achievements ─────────────────────────────────────────────────── */
+
+  const achievements = getAchievements(analyses);
+  const earnedCount = achievements.filter((a) => a.earned).length;
 
   /* ── Favourite pro display ─────────────────────────────────────────── */
 
@@ -312,28 +351,47 @@ export default function ProfileScreen() {
 
         {/* ── Your Progress (SPEC §10) ───────────────────────────────────── */}
         <SectionCard title={t('profile.progressTitle')}>
+          {/* Per-stroke filter chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingBottom: 12 }}
+          >
+            <Chip
+              label={t('profile.progressFilterAll')}
+              active={strokeFilter === null}
+              onPress={() => setStrokeFilter(null)}
+            />
+            {STROKE_TYPES.map((s) => (
+              <Chip
+                key={s}
+                label={t(`stroke.${s}`)}
+                active={strokeFilter === s}
+                onPress={() => setStrokeFilter(s)}
+              />
+            ))}
+          </ScrollView>
+
           <ProgressChart points={chartPoints} height={140} />
         </SectionCard>
 
         {/* ── Achievements ──────────────────────────────────────────────── */}
-        {profile.hasCompletedFirstAnalysis ? (
-          <SectionCard title={t('profile.badgesTitle')}>
-            <View className="flex-row items-center gap-3 rounded-card border border-mint bg-white p-3">
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-mint">
-                <Text className="text-[20px]">🏸</Text>
-              </View>
-              <View>
-                <Text variant="bodyMedium" className="text-ink">
-                  {t('profile.badgeFirstAnalysis')}
-                </Text>
-                <Text variant="caption" className="text-slate">
-                  {t('celebration.firstAnalysis')}
-                </Text>
-              </View>
-              <Badge label="✓" tone="mint" className="ml-auto" />
-            </View>
-          </SectionCard>
-        ) : null}
+        <SectionCard title={t('achv.title')}>
+          {/* Earned count sub-label */}
+          <Text variant="caption" className="text-slate mb-4">
+            {t('achv.earnedCount', {
+              earned: earnedCount,
+              total: achievements.length,
+            })}
+          </Text>
+
+          {/* 2-column badge grid */}
+          <View className="flex-row flex-wrap gap-3">
+            {achievements.map((achv) => (
+              <AchievementCard key={achv.id} achievement={achv} t={t} />
+            ))}
+          </View>
+        </SectionCard>
 
         {/* ── Account ────────────────────────────────────────────────────── */}
         <SectionCard title={t('profile.account')}>
@@ -430,6 +488,69 @@ export default function ProfileScreen() {
         onConfirm={handleDeleteAccount}
         onCancel={() => setDeleteVisible(false)}
       />
+    </View>
+  );
+}
+
+/* ─── Achievement card ───────────────────────────────────────────────────── */
+
+function AchievementCard({
+  achievement,
+  t,
+}: {
+  achievement: Achievement;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  const IconComponent = ACHIEVEMENT_ICON_MAP[achievement.icon];
+  const { earned } = achievement;
+
+  return (
+    <View
+      className="rounded-card border p-3"
+      style={{
+        // Each card takes just under half the grid width (accounting for gap).
+        flex: 1,
+        minWidth: '45%',
+        opacity: earned ? 1 : 0.45,
+        borderColor: earned ? colors.mintTint : colors.border,
+        backgroundColor: earned ? colors.white : colors.lightAlt,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: earned ? 0.06 : 0,
+        shadowRadius: 4,
+        elevation: earned ? 1 : 0,
+      }}
+    >
+      {/* Icon circle */}
+      <View
+        className="h-10 w-10 items-center justify-center rounded-full mb-2"
+        style={{
+          backgroundColor: earned ? colors.mintTint : colors.border,
+        }}
+      >
+        <IconComponent
+          size={20}
+          color={earned ? colors.mintStrong : colors.inkMuted}
+        />
+      </View>
+
+      {/* Title */}
+      <Text
+        variant="bodyMedium"
+        className="text-[13px] leading-[18px]"
+        style={{ color: earned ? colors.ink : colors.inkMuted }}
+      >
+        {t(achievement.titleKey)}
+      </Text>
+
+      {/* Description */}
+      <Text
+        variant="caption"
+        className="text-[11px] leading-[15px] mt-0.5"
+        style={{ color: earned ? colors.inkSoft : colors.inkMuted }}
+      >
+        {t(achievement.descKey)}
+      </Text>
     </View>
   );
 }

@@ -70,6 +70,7 @@ export default function RootLayout() {
             options={{ presentation: 'fullScreenModal' }}
           />
           <Stack.Screen name="wallet/transactions" />
+          <Stack.Screen name="recording-tips" />
         </Stack>
         <ToastHost />
       </SafeAreaProvider>

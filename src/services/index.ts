@@ -26,5 +26,4 @@ export type {
   ShuttleCoachApi,
 } from './api';
 
-// Dev-only helper used by Sign Out / Delete Account to reset the mock DB.
-export { resetDb, SEED_MODE } from './mock/db';
+export { SEED_MODE } from './mock/db';

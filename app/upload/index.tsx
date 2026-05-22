@@ -21,7 +21,7 @@ import {
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { X, Check, Camera } from 'lucide-react-native';
+import { X, Check, Camera, ChevronRight } from 'lucide-react-native';
 
 import { Text, Button, BottomSheet } from '@/src/components/ui';
 import {
@@ -185,15 +185,22 @@ function TrimStep({ onContinue }: TrimStepProps) {
           </Text>
         </View>
 
-        {/* Camera-angle guide (SPEC §9.1 — shown before trim) */}
-        <View className="flex-row items-center gap-3 rounded-card border border-tip-border bg-tip-bg p-3">
+        {/* Camera-angle guide (SPEC §9.1 — shown before trim) — tappable to recording tips */}
+        <Pressable
+          onPress={() => router.push('/recording-tips')}
+          accessibilityRole="button"
+          accessibilityLabel={t('upload.cameraGuide')}
+          style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+          className="flex-row items-center gap-3 rounded-card border border-tip-border bg-tip-bg p-3"
+        >
           <View className="h-9 w-9 items-center justify-center rounded-full bg-white">
             <Camera size={18} color={colors.primary} />
           </View>
           <Text variant="body" className="flex-1 text-ink">
             {t('upload.cameraGuide')}
           </Text>
-        </View>
+          <ChevronRight size={16} color={colors.slate} />
+        </Pressable>
 
         {/* Instruction */}
         <Text variant="body" className="text-slate text-center">
@@ -527,7 +534,7 @@ function CourtStep({ onContinue }: CourtStepProps) {
 interface PaymentSheetProps {
   visible: boolean;
   onClose: () => void;
-  onSuccess: (jobId: string, isFirst: boolean) => void;
+  onSuccess: (jobId: string, isFirst: boolean, strokeType: string) => void;
 }
 
 function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
@@ -575,7 +582,7 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
       };
       const { jobId } = await api.submitAnalysis(request);
       const isFirst = profile.hasCompletedFirstAnalysis === false;
-      onSuccess(jobId, isFirst);
+      onSuccess(jobId, isFirst, strokeType);
     } catch (err) {
       if (err instanceof ApiError && err.code === 'INSUFFICIENT_CREDITS') {
         setApiError(t('upload.insufficient', { balance, shortfall }));
@@ -774,11 +781,11 @@ export default function UploadScreen() {
   }, []);
 
   const handlePaymentSuccess = useCallback(
-    (jobId: string, isFirst: boolean) => {
+    (jobId: string, isFirst: boolean, strokeType: string) => {
       useUploadStore.getState().reset();
       router.replace({
         pathname: '/processing',
-        params: { jobId, first: isFirst ? '1' : '0' },
+        params: { jobId, first: isFirst ? '1' : '0', stroke: strokeType },
       });
     },
     [],
