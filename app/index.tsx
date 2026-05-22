@@ -1,7 +1,7 @@
 /**
  * S1 — Splash Screen (SPEC §4 S1).
  *
- * Minimal brand moment: a solid navy background, the shuttlecock logo mark and
+ * Minimal brand moment: a solid navy background, the chevron logo mark and
  * the "Shuttle Coach" wordmark, with a small sponsor credit at the bottom.
  * Holds ~2s, then routes to the Login screen.
  */
