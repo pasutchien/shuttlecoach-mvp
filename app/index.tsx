@@ -1,8 +1,9 @@
 /**
  * S1 — Splash Screen (SPEC §4 S1).
  *
- * Brand moment + auth check. Logo / tagline / sponsor fade in, hold, then route
- * to Onboarding (new user) or Home (returning user).
+ * Minimal brand moment: a solid navy background, the shuttlecock logo mark and
+ * the "Shuttle Coach" wordmark, with a small sponsor credit at the bottom.
+ * Holds ~2s, then routes to the Login screen.
  */
 import { useEffect } from 'react';
 import { View } from 'react-native';
@@ -10,11 +11,10 @@ import { router } from 'expo-router';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from '@/src/components/ui';
-import { SponsorBadge } from '@/src/components/shared';
+import { Logo, SponsorBadge } from '@/src/components/shared';
 import { useTranslation } from '@/src/hooks/useTranslation';
 import { useReducedMotion } from '@/src/hooks/useReducedMotion';
 import { useUserStore } from '@/src/store';
@@ -24,50 +24,35 @@ export default function SplashScreen() {
   const reduced = useReducedMotion();
   const hydrated = useUserStore((s) => s.hydrated);
 
-  const logo = useSharedValue(reduced ? 1 : 0);
-  const tagline = useSharedValue(reduced ? 1 : 0);
-  const sponsor = useSharedValue(reduced ? 1 : 0);
+  // A single gentle fade-in for the whole brand lockup.
+  const opacity = useSharedValue(reduced ? 1 : 0);
 
   useEffect(() => {
-    if (reduced) return;
-    logo.value = withTiming(1, { duration: 600 });
-    tagline.value = withDelay(600, withTiming(1, { duration: 400 }));
-    sponsor.value = withDelay(1000, withTiming(1, { duration: 400 }));
-  }, [reduced, logo, tagline, sponsor]);
+    if (!reduced) opacity.value = withTiming(1, { duration: 700 });
+  }, [reduced, opacity]);
 
   // Hold ~2s (the brand moment), then go to the Login screen.
   useEffect(() => {
     if (!hydrated) return;
-    const timer = setTimeout(() => {
-      router.replace('/login');
-    }, 2000);
+    const timer = setTimeout(() => router.replace('/login'), 2000);
     return () => clearTimeout(timer);
   }, [hydrated]);
 
-  const logoStyle = useAnimatedStyle(() => ({ opacity: logo.value }));
-  const taglineStyle = useAnimatedStyle(() => ({ opacity: tagline.value }));
-  const sponsorStyle = useAnimatedStyle(() => ({ opacity: sponsor.value }));
+  const lockupStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
   return (
     <View className="flex-1 items-center justify-center bg-navy">
-      {/* Subtle depth overlay (navy → deep-navy) */}
-      <View className="absolute inset-x-0 bottom-0 h-1/2 bg-deep-navy/60" />
-
-      <Animated.View style={logoStyle} className="items-center">
-        <Text className="font-display text-[36px] text-primary">
+      <Animated.View style={lockupStyle} className="items-center">
+        <Logo size={88} />
+        <Text className="mt-5 font-display text-[28px] text-white">
           {t('common.appName')}
         </Text>
       </Animated.View>
 
-      <Animated.View style={taglineStyle} className="mt-3">
-        <Text variant="body" className="text-center text-light">
-          {t('splash.tagline')}
-        </Text>
-      </Animated.View>
-
-      <Animated.View style={sponsorStyle} className="absolute bottom-16">
+      {/* Small sponsor credit (SPEC §12) */}
+      <View className="absolute bottom-14">
         <SponsorBadge variant="plain" />
-      </Animated.View>
+      </View>
     </View>
   );
 }

@@ -1,4 +1,5 @@
 /** Shared (app-specific) component barrel. */
+export { Logo } from './Logo';
 export { SponsorBadge } from './SponsorBadge';
 export type { SponsorBadgeVariant } from './SponsorBadge';
 export { StrokeIcon } from './StrokeIcon';
