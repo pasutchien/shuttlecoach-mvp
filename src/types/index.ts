@@ -151,6 +151,29 @@ export interface Transaction {
 }
 
 /* ----------------------------------------------------------------------------
+ * Feedback phases
+ * ------------------------------------------------------------------------- */
+
+export type FeedbackItemType = 'good' | 'bad' | 'warning';
+
+export interface FeedbackItem {
+  type: FeedbackItemType;
+  text: string;
+  /** Only present on bad items. */
+  drillId?: string;
+  timestampSec?: number;
+  severity?: Severity;
+}
+
+export interface FeedbackPhase {
+  number: number;
+  name: string;
+  /** 0–100 score for this phase. */
+  score: number;
+  items: FeedbackItem[];
+}
+
+/* ----------------------------------------------------------------------------
  * Drills
  * ------------------------------------------------------------------------- */
 
@@ -180,6 +203,8 @@ export interface MistakeCard {
   /** 1–2 sentence description: the mistake plus its performance impact. */
   description: string;
   severity: Severity;
+  /** Phase of the swing this mistake belongs to (e.g. "Contact", "Approach"). */
+  phase?: string;
   /** Timestamp (seconds) of the worst frame — drives the video jump. */
   timestampSec: number;
   /** Drill referenced by the "How to Fix" sheet (S10). */
@@ -202,6 +227,8 @@ export interface Analysis {
   proVideoUrl: string;
   /** Up to 5 cards, pre-sorted Critical → Major → Minor. */
   mistakes: MistakeCard[];
+  /** Phase-grouped feedback (4 phases). Present on analyses from the real backend. */
+  phases?: FeedbackPhase[];
   /** Trimmed clip duration in seconds. */
   durationSec: number;
 }

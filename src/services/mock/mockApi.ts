@@ -80,6 +80,11 @@ function errorFor(code: AnalysisErrorCode): AnalysisError {
 /* --- the mock API --------------------------------------------------------- */
 
 export const mockApi: ShuttleCoachApi = {
+  async login(): Promise<{ userId: string }> {
+    await delay(200);
+    return { userId: 'mock-user' };
+  },
+
   async getProPlayers(): Promise<ProPlayer[]> {
     await delay(260);
     return PRO_PLAYERS;

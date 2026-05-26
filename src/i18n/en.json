@@ -114,6 +114,8 @@
     "trimTooShort": "Clip must be at least 1 second long.",
     "cameraGuide": "Film from the side, full body visible.",
     "sampleClipNote": "Demo build — a sample clip is pre-loaded for you.",
+    "pickVideo": "Pick Video from Library",
+    "changeVideo": "Change Video",
     "strokeTitle": "Select Stroke Type",
     "strokeInstruction": "Select the stroke type so the AI compares you against the right Pro Player reference.",
     "courtTitle": "Calibrate the Court",

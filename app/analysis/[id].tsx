@@ -12,7 +12,7 @@
  *   first — if "1" this is the user's first ever analysis (SPEC §6.5)
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -24,28 +24,29 @@ import {
   StyleSheet,
   View,
   useWindowDimensions,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router, useLocalSearchParams } from "expo-router";
 import Animated, {
   FadeInRight,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from 'react-native-reanimated';
-import { useVideoPlayer, VideoView } from 'expo-video';
+} from "react-native-reanimated";
+import { useVideoPlayer, VideoView } from "expo-video";
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   Pause,
   Play,
   Share2,
   X,
-} from 'lucide-react-native';
-import { captureRef } from 'react-native-view-shot';
+} from "lucide-react-native";
+import { captureRef } from "react-native-view-shot";
 
-import type { Analysis, Drill, MistakeCard, ProPlayer } from '@/src/types';
-import { api, ApiError } from '@/src/services';
+import type { Analysis, Drill, MistakeCard, ProPlayer } from "@/src/types";
+import { api, ApiError } from "@/src/services";
 import {
   BottomSheet,
   Button,
@@ -54,40 +55,32 @@ import {
   Toggle,
   cardShadow,
   toast,
-} from '@/src/components/ui';
+} from "@/src/components/ui";
 import {
   AppHeader,
-  CheckpointBar,
   ConfettiOverlay,
-  MistakeHighlightCard,
   PoseSkeleton,
   ProAvatar,
-  RadarChart,
   ScoreCircle,
   ScreenContainer,
-  SelectSheet,
   SponsorBadge,
-} from '@/src/components/shared';
-import { resolveVideoSource } from '@/src/constants/media';
-import {
-  PRO_ACCENT,
-  getProPlayer,
-  prosForStroke,
-} from '@/src/constants/proPlayers';
-import { scoreBand } from '@/src/lib/score';
-import { colors } from '@/src/theme';
-import { hapticLight, hapticMedium, hapticSuccess } from '@/src/lib/haptics';
-import { useReducedMotion } from '@/src/hooks/useReducedMotion';
-import { useTranslation } from '@/src/hooks/useTranslation';
+} from "@/src/components/shared";
+import { resolveVideoSource } from "@/src/constants/media";
+import { getProPlayer } from "@/src/constants/proPlayers";
+import { scoreBand } from "@/src/lib/score";
+import { colors } from "@/src/theme";
+import { hapticLight, hapticMedium, hapticSuccess } from "@/src/lib/haptics";
+import { useReducedMotion } from "@/src/hooks/useReducedMotion";
+import { useTranslation } from "@/src/hooks/useTranslation";
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                       */
 /* -------------------------------------------------------------------------- */
 
 type ScreenState =
-  | { phase: 'loading' }
-  | { phase: 'error'; message: string }
-  | { phase: 'ready'; analysis: Analysis };
+  | { phase: "loading" }
+  | { phase: "error"; message: string }
+  | { phase: "ready"; analysis: Analysis };
 
 type PlaybackSpeed = 0.25 | 0.5 | 1.0;
 
@@ -99,9 +92,9 @@ const FRAME_STEP = 1 / 30; // ~1 frame at 30fps
 /* -------------------------------------------------------------------------- */
 
 function formatSpeed(s: PlaybackSpeed): string {
-  if (s === 1.0) return '1×';
-  if (s === 0.5) return '0.5×';
-  return '0.25×';
+  if (s === 1.0) return "1×";
+  if (s === 0.5) return "0.5×";
+  return "0.25×";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -180,13 +173,13 @@ function DrillSheet({ mistake, onClose }: DrillSheetProps) {
           variant="h1"
           className="flex-1 pr-4 text-[18px] font-semibold text-ink"
         >
-          {mistake?.title ?? ''}
+          {mistake?.title ?? ""}
         </Text>
         <Pressable
           onPress={onClose}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={t('common.close')}
+          accessibilityLabel={t("common.close")}
         >
           <X size={22} color={colors.slate} />
         </Pressable>
@@ -198,13 +191,13 @@ function DrillSheet({ mistake, onClose }: DrillSheetProps) {
         </View>
       ) : error ? (
         <Text variant="body" className="text-center text-score-red py-8">
-          {t('error.loadFailed')}
+          {t("error.loadFailed")}
         </Text>
       ) : drill ? (
         <>
           {/* Drill name */}
           <Text variant="label" className="text-primary mb-4 text-[14px]">
-            {t('drill.label', { name: drill.name })}
+            {t("drill.label", { name: drill.name })}
           </Text>
 
           {/* Steps */}
@@ -254,9 +247,12 @@ function DrillSheet({ mistake, onClose }: DrillSheetProps) {
               className="text-mint text-[12px] mb-1 uppercase"
               style={{ letterSpacing: 0.5 }}
             >
-              {t('drill.coachTip')}
+              {t("drill.coachTip")}
             </Text>
-            <Text variant="body" className="text-ink text-[14px] leading-[21px]">
+            <Text
+              variant="body"
+              className="text-ink text-[14px] leading-[21px]"
+            >
               {drill.coachTip}
             </Text>
           </View>
@@ -270,7 +266,7 @@ function DrillSheet({ mistake, onClose }: DrillSheetProps) {
               variant="caption"
               className="text-slate text-center text-[13px]"
             >
-              {t('drill.videoComingSoon')}
+              {t("drill.videoComingSoon")}
             </Text>
           </View>
         </>
@@ -279,7 +275,7 @@ function DrillSheet({ mistake, onClose }: DrillSheetProps) {
       {/* Done button */}
       <View className="mt-4">
         <Button
-          label={t('drill.doneCta')}
+          label={t("drill.doneCta")}
           variant="primary"
           size="lg"
           onPress={onClose}
@@ -315,20 +311,20 @@ function ShareCardModal({
 
   const handleShare = useCallback(async () => {
     // Web: keep text share (view-shot is unreliable on web).
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       try {
         await Share.share({
-          title: t('common.appName'),
+          title: t("common.appName"),
           message: [
-            `${t('common.appName')} — ${t('stroke.' + analysis.strokeType)}`,
-            `${t('analysis.shareScore')}: ${analysis.overallScore}/100`,
+            `${t("common.appName")} — ${t("stroke." + analysis.strokeType)}`,
+            `${t("analysis.shareScore")}: ${analysis.overallScore}/100`,
             topMistake
-              ? `${t('analysis.shareTopMistake')}: ${topMistake.title}`
-              : '',
-            t('common.sponsor'),
+              ? `${t("analysis.shareTopMistake")}: ${topMistake.title}`
+              : "",
+            t("common.sponsor"),
           ]
             .filter(Boolean)
-            .join('\n'),
+            .join("\n"),
         });
       } catch {
         // User cancelled or share not available.
@@ -338,23 +334,23 @@ function ShareCardModal({
 
     // Native: capture the branded card as a PNG and share it.
     try {
-      const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
+      const uri = await captureRef(cardRef, { format: "png", quality: 1 });
       await Share.share({ url: uri });
     } catch {
       // Fallback: text share if capture or native share fails.
       try {
         await Share.share({
-          title: t('common.appName'),
+          title: t("common.appName"),
           message: [
-            `${t('common.appName')} — ${t('stroke.' + analysis.strokeType)}`,
-            `${t('analysis.shareScore')}: ${analysis.overallScore}/100`,
+            `${t("common.appName")} — ${t("stroke." + analysis.strokeType)}`,
+            `${t("analysis.shareScore")}: ${analysis.overallScore}/100`,
             topMistake
-              ? `${t('analysis.shareTopMistake')}: ${topMistake.title}`
-              : '',
-            t('common.sponsor'),
+              ? `${t("analysis.shareTopMistake")}: ${topMistake.title}`
+              : "",
+            t("common.sponsor"),
           ]
             .filter(Boolean)
-            .join('\n'),
+            .join("\n"),
         });
       } catch {
         // User cancelled — silently ignore.
@@ -374,7 +370,7 @@ function ShareCardModal({
         <Pressable
           className="absolute inset-0"
           onPress={onClose}
-          accessibilityLabel={t('common.close')}
+          accessibilityLabel={t("common.close")}
         />
 
         {/* Branded card — captured by captureRef on native */}
@@ -386,10 +382,10 @@ function ShareCardModal({
           {/* Header stripe */}
           <View className="bg-deep-navy px-5 pt-5 pb-4">
             <Text className="font-display text-[28px] text-primary">
-              {t('common.appName')}
+              {t("common.appName")}
             </Text>
             <Text variant="caption" className="text-on-dark-muted mt-0.5">
-              {t('splash.tagline')}
+              {t("splash.tagline")}
             </Text>
           </View>
 
@@ -398,7 +394,7 @@ function ShareCardModal({
             <ScoreCircle score={analysis.overallScore} size={80} />
             <View className="flex-1">
               <Text variant="h2" className="text-white text-[16px]">
-                {t('stroke.' + analysis.strokeType)}
+                {t("stroke." + analysis.strokeType)}
               </Text>
               <Text
                 variant="label"
@@ -409,7 +405,7 @@ function ShareCardModal({
               </Text>
               {proPlayer ? (
                 <Text variant="caption" className="text-on-dark-muted mt-1">
-                  {t('analysis.comparedWith', { name: proPlayer.name })}
+                  {t("analysis.comparedWith", { name: proPlayer.name })}
                 </Text>
               ) : null}
             </View>
@@ -419,7 +415,7 @@ function ShareCardModal({
           {topMistake ? (
             <View className="mx-5 mb-4 p-3 rounded-card bg-deep-navy">
               <Text variant="caption" className="text-on-dark-muted mb-0.5">
-                {t('analysis.shareTopMistake')}
+                {t("analysis.shareTopMistake")}
               </Text>
               <Text variant="label" className="text-white text-[13px]">
                 {topMistake.title}
@@ -435,14 +431,14 @@ function ShareCardModal({
           {/* Actions (outside the captured area is ideal but the card wraps them) */}
           <View className="px-5 pb-5 gap-2">
             <Button
-              label={t('analysis.shareTitle')}
+              label={t("analysis.shareTitle")}
               variant="primary"
               size="md"
               icon={<Share2 size={16} color={colors.white} />}
               onPress={handleShare}
             />
             <Button
-              label={t('common.close')}
+              label={t("common.close")}
               variant="text"
               size="md"
               onPress={onClose}
@@ -465,10 +461,10 @@ export default function AnalysisScreen() {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const reduced = useReducedMotion();
 
-  const isFirstAnalysis = first === '1';
+  const isFirstAnalysis = first === "1";
 
   /* ---- Screen state ---- */
-  const [state, setState] = useState<ScreenState>({ phase: 'loading' });
+  const [state, setState] = useState<ScreenState>({ phase: "loading" });
 
   /* ---- Video playback state ---- */
   const [playing, setPlaying] = useState(false);
@@ -477,10 +473,10 @@ export default function AnalysisScreen() {
   const [currentTime, setCurrentTime] = useState(0);
   const [flashRed, setFlashRed] = useState(false);
   const scrubbing = useRef(false);
+  const durationRef = useRef(0);
 
   /* ---- UI overlay state ---- */
   const [skeletonOn, setSkeletonOn] = useState(false);
-  const [showProPicker, setShowProPicker] = useState(false);
   const [currentProPlayer, setCurrentProPlayer] = useState<
     ProPlayer | undefined
   >(undefined);
@@ -493,13 +489,7 @@ export default function AnalysisScreen() {
   const [cardsVisible, setCardsVisible] = useState(false);
 
   /* ---- Video players (null source until analysis loads) ---- */
-  const userPlayer = useVideoPlayer(null, (p) => {
-    p.loop = true;
-    p.muted = true;
-    p.playbackRate = 0.5;
-  });
-
-  const proPlayer = useVideoPlayer(null, (p) => {
+  const compPlayer = useVideoPlayer(null, (p) => {
     p.loop = true;
     p.muted = true;
     p.playbackRate = 0.5;
@@ -508,7 +498,7 @@ export default function AnalysisScreen() {
   /* ---- Load analysis ---- */
   useEffect(() => {
     if (!id) {
-      setState({ phase: 'error', message: t('error.title') });
+      setState({ phase: "error", message: t("error.title") });
       return;
     }
     let cancelled = false;
@@ -518,19 +508,17 @@ export default function AnalysisScreen() {
         if (cancelled) return;
         const pro = getProPlayer(analysis.proPlayerId);
         setCurrentProPlayer(pro);
-        setDuration(analysis.durationSec);
-        setState({ phase: 'ready', analysis });
+        setState({ phase: "ready", analysis });
 
-        // Load video sources into the players.
-        userPlayer.replace(resolveVideoSource(analysis.userVideoUrl));
-        proPlayer.replace(resolveVideoSource(analysis.proVideoUrl));
+        // Load the overlay comparison video.
+        compPlayer.replace(resolveVideoSource(analysis.proVideoUrl));
 
         // Show "Saved to History" toast
-        toast(t('analysis.savedToast'), 'success');
+        toast(t("analysis.savedToast"), "success");
 
         // First-analysis celebration
         if (isFirstAnalysis) {
-          toast(t('analysis.firstAnalysisToast'), 'success');
+          toast(t("analysis.firstAnalysisToast"), "success");
           hapticSuccess();
           setTimeout(() => setShowConfetti(false), 2500);
         }
@@ -540,9 +528,8 @@ export default function AnalysisScreen() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        const msg =
-          err instanceof ApiError ? err.message : t('error.title');
-        setState({ phase: 'error', message: msg });
+        const msg = err instanceof ApiError ? err.message : t("error.title");
+        setState({ phase: "error", message: msg });
       });
     return () => {
       cancelled = true;
@@ -550,113 +537,116 @@ export default function AnalysisScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  /* ---- Keep time indicator updated ---- */
+  /* ---- Poll currentTime and duration from the player ---- */
   useEffect(() => {
-    if (!playing || scrubbing.current) return;
     const iv = setInterval(() => {
-      setCurrentTime(userPlayer.currentTime);
-    }, 100);
+      const d = compPlayer.duration;
+      if (d && isFinite(d) && d > 0) {
+        durationRef.current = d;
+        setDuration((prev) => (prev > 0 ? prev : d));
+      }
+      if (!scrubbing.current) {
+        const t = compPlayer.currentTime;
+        if (isFinite(t)) setCurrentTime(t);
+      }
+    }, 80);
     return () => clearInterval(iv);
-  }, [playing, userPlayer]);
+  }, [compPlayer]);
 
   /* ---- Playback controls ---- */
   const togglePlay = useCallback(() => {
     hapticLight();
     if (playing) {
-      userPlayer.pause();
-      proPlayer.pause();
+      compPlayer.pause();
       setPlaying(false);
     } else {
-      userPlayer.play();
-      proPlayer.play();
+      compPlayer.play();
       setPlaying(true);
     }
-  }, [playing, userPlayer, proPlayer]);
+  }, [playing, compPlayer]);
 
   const stepFrame = useCallback(
-    (direction: 'back' | 'forward') => {
+    (direction: "back" | "forward") => {
       hapticLight();
-      const delta = direction === 'back' ? -FRAME_STEP : FRAME_STEP;
+      const delta = direction === "back" ? -FRAME_STEP : FRAME_STEP;
       const next = Math.max(0, Math.min(duration, currentTime + delta));
-      userPlayer.currentTime = next;
-      proPlayer.currentTime = next;
+      compPlayer.currentTime = next;
       setCurrentTime(next);
     },
-    [currentTime, duration, userPlayer, proPlayer],
+    [currentTime, duration, compPlayer],
   );
 
   const setPlaybackSpeed = useCallback(
     (s: PlaybackSpeed) => {
       hapticLight();
       setSpeed(s);
-      userPlayer.playbackRate = s;
-      proPlayer.playbackRate = s;
+      compPlayer.playbackRate = s;
     },
-    [userPlayer, proPlayer],
+    [compPlayer],
   );
 
   const seekTo = useCallback(
     (sec: number) => {
       const clamped = Math.max(0, Math.min(duration, sec));
-      userPlayer.currentTime = clamped;
-      proPlayer.currentTime = clamped;
+      compPlayer.currentTime = clamped;
       setCurrentTime(clamped);
     },
-    [duration, userPlayer, proPlayer],
+    [duration, compPlayer],
   );
 
   const jumpToTimestamp = useCallback(
     (timestampSec: number) => {
       hapticMedium();
-      // Pause and jump
-      userPlayer.pause();
-      proPlayer.pause();
+      compPlayer.pause();
       setPlaying(false);
       seekTo(timestampSec);
-      // Flash red
       setFlashRed(true);
       setTimeout(() => setFlashRed(false), 350);
     },
-    [userPlayer, proPlayer, seekTo],
+    [compPlayer, seekTo],
   );
 
   /* ---- Timeline scrubber PanResponder ---- */
   const scrubberWidth = useRef(0);
+  const startX = useRef(0); // Track the initial tap location
+
   const scrubPan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true, // Ensure the responder claims the drag event
       onPanResponderGrant: (e) => {
         scrubbing.current = true;
+        startX.current = e.nativeEvent.locationX; // Lock in the initial X position
+
         const ratio =
           scrubberWidth.current > 0
-            ? Math.max(0, Math.min(1, e.nativeEvent.locationX / scrubberWidth.current))
+            ? Math.max(0, Math.min(1, startX.current / scrubberWidth.current))
             : 0;
-        const seek = ratio * (duration || 1);
-        seekTo(seek);
+        const t = ratio * (durationRef.current || 1);
+        compPlayer.currentTime = t;
+        setCurrentTime(t);
       },
-      onPanResponderMove: (e) => {
+      onPanResponderMove: (e, gestureState) => {
+        // Calculate the current position by adding the drag delta (dx) to the start point
+        const currentX = startX.current + gestureState.dx;
+
         const ratio =
           scrubberWidth.current > 0
-            ? Math.max(0, Math.min(1, e.nativeEvent.locationX / scrubberWidth.current))
+            ? Math.max(0, Math.min(1, currentX / scrubberWidth.current))
             : 0;
-        const seek = ratio * (duration || 1);
-        seekTo(seek);
+        const t = ratio * (durationRef.current || 1);
+        compPlayer.currentTime = t;
+        setCurrentTime(t);
       },
       onPanResponderRelease: () => {
         scrubbing.current = false;
       },
+      onPanResponderTerminate: () => {
+        // Catch interruptions (like a scroll event taking over or an incoming call)
+        scrubbing.current = false;
+      },
     }),
   ).current;
-
-  /* ---- Pro player picker options ---- */
-  const proOptions =
-    state.phase === 'ready'
-      ? prosForStroke(state.analysis.strokeType).map((p) => ({
-          value: p.id,
-          label: p.name,
-          subtitle: `${p.nationality} · ${p.heightCm} cm`,
-        }))
-      : [];
 
   /* ---- Flash overlay animated style ---- */
   const flashOpacity = useSharedValue(0);
@@ -675,10 +665,9 @@ export default function AnalysisScreen() {
 
   /* ---- Layout constants ---- */
   const videoHeight = Math.round(screenHeight * 0.38);
-  const halfWidth = Math.floor(screenWidth / 2);
 
   /* ========== RENDER: loading ========== */
-  if (state.phase === 'loading') {
+  if (state.phase === "loading") {
     return (
       <View className="flex-1" style={{ paddingTop: insets.top }}>
         <SkeletonLoading />
@@ -687,24 +676,24 @@ export default function AnalysisScreen() {
   }
 
   /* ========== RENDER: error ========== */
-  if (state.phase === 'error') {
+  if (state.phase === "error") {
     return (
       <View
         className="flex-1 items-center justify-center bg-navy px-8 gap-4"
         style={{ paddingTop: insets.top }}
       >
         <Text variant="h1" className="text-white text-center">
-          {t('error.title')}
+          {t("error.title")}
         </Text>
         <Text variant="body" className="text-on-dark-muted text-center">
           {state.message}
         </Text>
         <Button
-          label={t('common.back')}
+          label={t("common.back")}
           variant="secondary"
           size="md"
           block={false}
-          onPress={() => router.replace('/(tabs)/home')}
+          onPress={() => router.replace("/(tabs)/home")}
         />
       </View>
     );
@@ -715,12 +704,6 @@ export default function AnalysisScreen() {
   const band = scoreBand(analysis.overallScore);
   const scrubFraction = duration > 0 ? currentTime / duration : 0;
 
-  /** RadarChart points — one per checkpoint. */
-  const radarPoints = analysis.checkpoints.map((cp) => ({
-    label: t('checkpoint.' + cp.key),
-    value: cp.score,
-  }));
-
   return (
     <ScreenContainer
       background="navy"
@@ -729,7 +712,7 @@ export default function AnalysisScreen() {
           showBack
           onBack={() => {
             hapticLight();
-            router.replace('/(tabs)/home');
+            router.replace("/(tabs)/home");
           }}
           right={
             <Pressable
@@ -739,7 +722,7 @@ export default function AnalysisScreen() {
               }}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel={t('analysis.shareTitle')}
+              accessibilityLabel={t("analysis.shareTitle")}
               className="h-11 w-11 items-center justify-center"
             >
               <Share2 size={22} color={colors.white} />
@@ -749,115 +732,67 @@ export default function AnalysisScreen() {
       }
     >
       {/* ------------------------------------------------------------------ */}
-      {/* SPLIT-SCREEN VIDEO AREA                                              */}
+      {/* COMPARISON VIDEO (overlay: user + pro skeleton on top)              */}
       {/* ------------------------------------------------------------------ */}
-      <View style={{ height: videoHeight }} className="flex-row">
-        {/* LEFT — User video */}
-        <View style={{ width: halfWidth, height: videoHeight }} className="relative overflow-hidden">
-          <VideoView
-            player={userPlayer}
-            style={{ width: halfWidth, height: videoHeight }}
-            contentFit="cover"
-            nativeControls={false}
-            accessibilityLabel="Your swing video"
-          />
+      <View
+        style={{ height: videoHeight, width: screenWidth }}
+        className="relative overflow-hidden bg-black"
+      >
+        <VideoView
+          player={compPlayer}
+          style={{ width: screenWidth, height: videoHeight }}
+          contentFit="contain"
+          nativeControls={false}
+          accessibilityLabel="Swing comparison video"
+        />
 
-          {/* Skeleton overlay */}
-          {skeletonOn ? (
-            <View
-              style={StyleSheet.absoluteFillObject}
-              className="items-center justify-center"
-              pointerEvents="none"
-            >
-              <PoseSkeleton
-                size={Math.min(halfWidth, videoHeight) * 0.85}
-                color="rgba(255,255,255,0.55)"
-                jointColor={colors.mint}
-              />
-            </View>
-          ) : null}
-
-          {/* Flash red overlay */}
-          <Animated.View
-            style={[StyleSheet.absoluteFillObject, flashStyle, { backgroundColor: colors.scoreRed }]}
+        {/* Skeleton overlay toggle */}
+        {skeletonOn ? (
+          <View
+            style={StyleSheet.absoluteFillObject}
+            className="items-center justify-center"
             pointerEvents="none"
-          />
-
-          {/* Score badge */}
-          <View className="absolute top-2 left-2">
-            <ScoreCircle
-              score={analysis.overallScore}
-              size={68}
-              strokeWidth={5}
-              animated={!reduced}
-              label={t(band.labelKey)}
+          >
+            <PoseSkeleton
+              size={Math.min(screenWidth, videoHeight) * 0.85}
+              color="rgba(255,255,255,0.55)"
+              jointColor={colors.mint}
             />
           </View>
+        ) : null}
 
-          {/* Label */}
+        {/* Flash red overlay */}
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFillObject,
+            flashStyle,
+            { backgroundColor: colors.scoreRed },
+          ]}
+          pointerEvents="none"
+        />
+
+        {/* Score badge */}
+        <View className="absolute top-2 left-2">
+          <ScoreCircle
+            score={analysis.overallScore}
+            size={68}
+            strokeWidth={5}
+            animated={!reduced}
+            label={t(band.labelKey)}
+          />
+        </View>
+
+        {/* Pro label */}
+        {currentProPlayer ? (
           <View
-            className="absolute bottom-0 left-0 right-0 px-2 py-1"
-            style={{ backgroundColor: 'rgba(10,22,40,0.65)' }}
+            className="absolute bottom-0 left-0 right-0 px-3 py-1.5"
+            style={{ backgroundColor: "rgba(10,22,40,0.65)" }}
           >
             <Text variant="caption" className="text-white text-[11px]">
-              {t('analysis.youLabel')}
+              {t("analysis.youLabel")} vs {currentProPlayer.name}
             </Text>
           </View>
-        </View>
-
-        {/* RIGHT — Pro video */}
-        <View style={{ width: halfWidth, height: videoHeight }} className="relative overflow-hidden">
-          <VideoView
-            player={proPlayer}
-            style={{ width: halfWidth, height: videoHeight }}
-            contentFit="cover"
-            nativeControls={false}
-            accessibilityLabel={`${currentProPlayer?.name ?? 'Pro'} reference video`}
-          />
-
-          {/* Skeleton overlay */}
-          {skeletonOn ? (
-            <View
-              style={StyleSheet.absoluteFillObject}
-              className="items-center justify-center"
-              pointerEvents="none"
-            >
-              <PoseSkeleton
-                size={Math.min(halfWidth, videoHeight) * 0.85}
-                color="rgba(0,200,150,0.55)"
-                jointColor={colors.orange}
-              />
-            </View>
-          ) : null}
-
-          {/* Pro player label */}
-          {currentProPlayer ? (
-            <View
-              className="absolute bottom-0 left-0 right-0 px-2 py-1"
-              style={{ backgroundColor: 'rgba(10,22,40,0.65)' }}
-            >
-              <Text
-                variant="caption"
-                className="text-white text-[11px]"
-                numberOfLines={1}
-              >
-                {currentProPlayer.name}
-              </Text>
-            </View>
-          ) : null}
-
-          {/* Accent border */}
-          <View
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              bottom: 0,
-              width: 2,
-              backgroundColor: PRO_ACCENT[currentProPlayer?.id ?? ''] ?? colors.mint,
-            }}
-          />
-        </View>
+        ) : null}
       </View>
 
       {/* ------------------------------------------------------------------ */}
@@ -888,7 +823,7 @@ export default function AnalysisScreen() {
               left: `${scrubFraction * 100}%`,
               marginLeft: -8,
               top: 3,
-              shadowColor: '#000',
+              shadowColor: "#000",
               shadowOpacity: 0.25,
               shadowRadius: 3,
               elevation: 3,
@@ -910,7 +845,7 @@ export default function AnalysisScreen() {
         <View className="flex-row items-center justify-center gap-5">
           {/* Frame back */}
           <Pressable
-            onPress={() => stepFrame('back')}
+            onPress={() => stepFrame("back")}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Step back one frame"
@@ -923,7 +858,7 @@ export default function AnalysisScreen() {
           <Pressable
             onPress={togglePlay}
             accessibilityRole="button"
-            accessibilityLabel={playing ? 'Pause' : 'Play'}
+            accessibilityLabel={playing ? "Pause" : "Play"}
             className="h-12 w-12 items-center justify-center rounded-full bg-primary"
           >
             {playing ? (
@@ -935,7 +870,7 @@ export default function AnalysisScreen() {
 
           {/* Frame forward */}
           <Pressable
-            onPress={() => stepFrame('forward')}
+            onPress={() => stepFrame("forward")}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="Step forward one frame"
@@ -957,7 +892,7 @@ export default function AnalysisScreen() {
                 className="px-2 py-1 rounded-input"
                 style={{
                   backgroundColor:
-                    speed === s ? colors.primary : 'rgba(255,255,255,0.1)',
+                    speed === s ? colors.primary : "rgba(255,255,255,0.1)",
                 }}
               >
                 <Text
@@ -974,41 +909,19 @@ export default function AnalysisScreen() {
           </View>
         </View>
 
-        {/* Toggle bar */}
-        <View className="flex-row items-center justify-between mt-3 pt-2 border-t border-white/10">
-          {/* Switch Pro Player */}
-          <Pressable
-            onPress={() => {
+        {/* Skeleton overlay toggle */}
+        <View className="flex-row items-center justify-end mt-3 pt-2 border-t border-white/10 gap-2">
+          <Text variant="caption" className="text-on-dark-muted text-[12px]">
+            {skeletonOn ? t("analysis.skeletonOn") : t("analysis.skeletonOff")}
+          </Text>
+          <Toggle
+            value={skeletonOn}
+            onValueChange={(v) => {
               hapticLight();
-              setShowProPicker(true);
+              setSkeletonOn(v);
             }}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel={t('analysis.switchPro')}
-            className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-input border border-white/20"
-          >
-            {currentProPlayer ? (
-              <ProAvatar player={currentProPlayer} size={20} />
-            ) : null}
-            <Text variant="label" className="text-white text-[12px]">
-              {t('analysis.switchPro')}
-            </Text>
-          </Pressable>
-
-          {/* Skeleton overlay toggle */}
-          <View className="flex-row items-center gap-2">
-            <Text variant="caption" className="text-on-dark-muted text-[12px]">
-              {skeletonOn ? t('analysis.skeletonOn') : t('analysis.skeletonOff')}
-            </Text>
-            <Toggle
-              value={skeletonOn}
-              onValueChange={(v) => {
-                hapticLight();
-                setSkeletonOn(v);
-              }}
-              accessibilityLabel="Skeleton overlay"
-            />
-          </View>
+            accessibilityLabel="Skeleton overlay"
+          />
         </View>
       </View>
 
@@ -1020,91 +933,262 @@ export default function AnalysisScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Mistakes header */}
+        {/* Phase-grouped feedback */}
         <View className="px-4 pt-4 pb-2">
-          <Text variant="h2" className="text-ink text-[16px]">
-            {t('analysis.mistakesHeader')}
+          <Text variant="h2" className="text-ink text-[16px] mb-3">
+            {t("analysis.mistakesHeader")}
           </Text>
-        </View>
 
-        {/* Mistake cards */}
-        {analysis.mistakes.length === 0 ? (
-          <View className="px-4 py-6 items-center">
-            <Text variant="body" className="text-center text-slate">
-              {t('analysis.noMistakes')}
-            </Text>
-          </View>
-        ) : (
-          <View className="px-4">
-            {analysis.mistakes.map((mistake, index) =>
-              cardsVisible ? (
-                <Animated.View
+          {!cardsVisible ? (
+            [0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-20 w-full mb-3 rounded-card" />
+            ))
+          ) : analysis.phases && analysis.phases.length > 0 ? (
+            // New 4-phase layout
+            analysis.phases.map((phase) => {
+              const phaseScoreColor =
+                phase.score >= 70
+                  ? colors.scoreGreen
+                  : phase.score >= 40
+                    ? colors.scoreAmber
+                    : colors.scoreRed;
+              const phaseScoreBg =
+                phase.score >= 70
+                  ? "rgba(34,197,94,0.12)"
+                  : phase.score >= 40
+                    ? "rgba(245,158,11,0.12)"
+                    : "rgba(239,68,68,0.12)";
+              return (
+                <View key={phase.number} className="mb-5">
+                  {/* Phase header */}
+                  <View className="flex-row items-center mb-2">
+                    <View
+                      className="items-center justify-center rounded-full mr-2"
+                      style={{
+                        width: 22,
+                        height: 22,
+                        backgroundColor: colors.primary,
+                      }}
+                    >
+                      <Text
+                        variant="caption"
+                        className="text-white font-bold"
+                        style={{ fontSize: 10 }}
+                      >
+                        {phase.number}
+                      </Text>
+                    </View>
+                    <Text
+                      variant="label"
+                      className="text-ink text-[14px] flex-1"
+                    >
+                      {phase.name}
+                    </Text>
+                    <View
+                      className="px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: phaseScoreBg }}
+                    >
+                      <Text
+                        variant="mono"
+                        className="text-[11px] font-bold"
+                        style={{ color: phaseScoreColor }}
+                      >
+                        {phase.score}%
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Phase items */}
+                  {phase.items.map((item, idx) => {
+                    if (item.type === "good") {
+                      return (
+                        <View
+                          key={idx}
+                          className="flex-row items-start px-3 py-2.5 rounded-lg mb-2"
+                          style={{
+                            backgroundColor: "rgba(34,197,94,0.10)",
+                            borderLeftWidth: 4,
+                            borderLeftColor: colors.scoreGreen,
+                          }}
+                        >
+                          <Check
+                            size={14}
+                            color={colors.scoreGreen}
+                            style={{ marginTop: 2 }}
+                          />
+                          <Text
+                            variant="body"
+                            className="ml-2 text-[13px] flex-1 leading-[19px]"
+                            style={{ color: "#166534" }}
+                          >
+                            {item.text}
+                          </Text>
+                        </View>
+                      );
+                    }
+
+                    if (item.type === "warning") {
+                      return (
+                        <View
+                          key={idx}
+                          className="flex-row items-start px-3 py-2.5 rounded-lg mb-2"
+                          style={{
+                            backgroundColor: "rgba(245,158,11,0.10)",
+                            borderLeftWidth: 4,
+                            borderLeftColor: colors.scoreAmber,
+                          }}
+                        >
+                          <Text style={{ fontSize: 13, marginTop: 1 }}>⚠️</Text>
+                          <Text
+                            variant="body"
+                            className="ml-2 text-[13px] flex-1 leading-[19px]"
+                            style={{ color: "#92400e" }}
+                          >
+                            {item.text}
+                          </Text>
+                        </View>
+                      );
+                    }
+
+                    // "bad" item
+                    const borderColor =
+                      item.severity === "Critical"
+                        ? colors.scoreRed
+                        : item.severity === "Major"
+                          ? colors.scoreAmber
+                          : colors.border;
+                    const bgColor =
+                      item.severity === "Critical"
+                        ? "rgba(239,68,68,0.08)"
+                        : item.severity === "Major"
+                          ? "rgba(245,158,11,0.08)"
+                          : "rgba(203,213,225,0.20)";
+
+                    const mistakeFromItem: MistakeCard = {
+                      id: item.drillId ?? `phase-${phase.number}-${idx}`,
+                      title: item.text.split(" — ")[0].slice(0, 60),
+                      description: item.text,
+                      severity: item.severity ?? "Major",
+                      phase: phase.name,
+                      timestampSec: item.timestampSec ?? 0,
+                      drillId: item.drillId ?? "",
+                    };
+
+                    return (
+                      <Pressable
+                        key={idx}
+                        onPress={() => jumpToTimestamp(item.timestampSec ?? 0)}
+                        className="flex-row items-start px-3 py-2.5 rounded-lg mb-2"
+                        style={{
+                          backgroundColor: bgColor,
+                          borderLeftWidth: 4,
+                          borderLeftColor: borderColor,
+                        }}
+                      >
+                        <Text
+                          variant="body"
+                          className="flex-1 text-ink text-[13px] leading-[19px]"
+                        >
+                          {item.text}
+                        </Text>
+                        {item.drillId ? (
+                          <Pressable
+                            onPress={() => {
+                              hapticLight();
+                              setActiveDrillMistake(mistakeFromItem);
+                            }}
+                            hitSlop={8}
+                            className="ml-2 mt-0.5 px-2 py-1 rounded-input bg-primary/10"
+                          >
+                            <Text
+                              variant="caption"
+                              className="text-primary text-[11px] font-semibold"
+                            >
+                              {t("analysis.howToFix")}
+                            </Text>
+                          </Pressable>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              );
+            })
+          ) : // Fallback: old mistake-based layout (mock API)
+          analysis.mistakes.length === 0 ? (
+            <View
+              className="flex-row items-center px-3 py-3 rounded-lg"
+              style={{
+                backgroundColor: "rgba(34,197,94,0.10)",
+                borderLeftWidth: 4,
+                borderLeftColor: colors.scoreGreen,
+              }}
+            >
+              <Check size={16} color={colors.scoreGreen} />
+              <Text
+                variant="body"
+                className="ml-2 text-[13px]"
+                style={{ color: colors.scoreGreen }}
+              >
+                No issues detected
+              </Text>
+            </View>
+          ) : (
+            analysis.mistakes.map((mistake) => {
+              const borderColor =
+                mistake.severity === "Critical"
+                  ? colors.scoreRed
+                  : mistake.severity === "Major"
+                    ? colors.scoreAmber
+                    : colors.border;
+              const bgColor =
+                mistake.severity === "Critical"
+                  ? "rgba(239,68,68,0.08)"
+                  : mistake.severity === "Major"
+                    ? "rgba(245,158,11,0.08)"
+                    : "rgba(203,213,225,0.20)";
+              return (
+                <Pressable
                   key={mistake.id}
-                  entering={
-                    reduced
-                      ? undefined
-                      : FadeInRight.delay(index * 80).duration(280)
-                  }
+                  onPress={() => jumpToTimestamp(mistake.timestampSec)}
+                  className="flex-row items-start px-3 py-2.5 rounded-lg mb-2"
+                  style={{
+                    backgroundColor: bgColor,
+                    borderLeftWidth: 4,
+                    borderLeftColor: borderColor,
+                  }}
                 >
-                  <MistakeHighlightCard
-                    mistake={mistake}
-                    severityLabel={t('severity.' + mistake.severity)}
-                    howToFixLabel={t('analysis.howToFix')}
-                    readMoreLabel={t('common.readMore')}
-                    readLessLabel={t('common.readLess')}
-                    onPress={() => jumpToTimestamp(mistake.timestampSec)}
-                    onHowToFix={() => {
+                  <View className="flex-1">
+                    <Text
+                      variant="label"
+                      className="text-ink text-[13px] mb-0.5"
+                    >
+                      {mistake.title}
+                    </Text>
+                    <Text variant="caption" className="text-slate text-[12px]">
+                      {mistake.description}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => {
                       hapticLight();
                       setActiveDrillMistake(mistake);
                     }}
-                  />
-                </Animated.View>
-              ) : (
-                // Placeholder while score is counting
-                <Skeleton
-                  key={mistake.id}
-                  className="h-24 w-full mb-3 rounded-card"
-                />
-              ),
-            )}
-          </View>
-        )}
-
-        {/* ── Checkpoint breakdown: radar + bar detail ───────────────────── */}
-        {analysis.checkpoints.length > 0 ? (
-          <View className="px-4 pt-2 pb-2">
-            <Text variant="h2" className="text-ink text-[16px] mb-3">
-              {t('analysis.checkpointsTitle')}
-            </Text>
-
-            <View className="bg-white rounded-card p-4" style={cardShadow}>
-              {/* Radar — at-a-glance spider view */}
-              {radarPoints.length >= 3 ? (
-                <RadarChart
-                  points={radarPoints}
-                  size={260}
-                  className="mb-4"
-                />
-              ) : null}
-
-              {/* Divider */}
-              {radarPoints.length >= 3 ? (
-                <View className="border-t border-border-soft mb-4" />
-              ) : null}
-
-              {/* Bar breakdown — detailed per-checkpoint scores */}
-              <View className="gap-3">
-                {analysis.checkpoints.map((cp) => (
-                  <CheckpointBar
-                    key={cp.key}
-                    label={t('checkpoint.' + cp.key)}
-                    score={cp.score}
-                  />
-                ))}
-              </View>
-            </View>
-          </View>
-        ) : null}
+                    hitSlop={8}
+                    className="ml-2 mt-0.5 px-2 py-1 rounded-input bg-primary/10"
+                  >
+                    <Text
+                      variant="caption"
+                      className="text-primary text-[11px] font-semibold"
+                    >
+                      {t("analysis.howToFix")}
+                    </Text>
+                  </Pressable>
+                </Pressable>
+              );
+            })
+          )}
+        </View>
 
         {/* Sponsor footer */}
         <View className="items-center pt-4 pb-2">
@@ -1118,23 +1202,6 @@ export default function AnalysisScreen() {
 
       {/* Confetti (first analysis) */}
       <ConfettiOverlay active={showConfetti} />
-
-      {/* Pro player picker */}
-      <SelectSheet
-        visible={showProPicker}
-        onClose={() => setShowProPicker(false)}
-        title={t('analysis.switchProTitle')}
-        options={proOptions}
-        selectedValue={currentProPlayer?.id}
-        onSelect={(proId) => {
-          const newPro = getProPlayer(proId);
-          if (newPro) {
-            setCurrentProPlayer(newPro);
-            hapticSuccess();
-          }
-        }}
-        heightRatio={0.55}
-      />
 
       {/* S10 Drill sheet */}
       <DrillSheet

@@ -27,8 +27,13 @@ export const useUserStore = create<UserState>((set) => ({
   hydrated: false,
 
   hydrate: async () => {
-    const profile = await api.getUserProfile();
-    set({ profile, hydrated: true });
+    try {
+      const profile = await api.getUserProfile();
+      set({ profile, hydrated: true });
+    } catch {
+      // No userId yet (first launch) or network error — proceed to login.
+      set({ hydrated: true });
+    }
   },
 
   completeOnboarding: async (input) => {

@@ -10,51 +10,48 @@
  *   - upload.sampleClipNote  ← already present in en.json ✓
  *   All required keys are present in en.json.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { Camera, Check, ChevronRight, X } from "lucide-react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   PanResponder,
   Pressable,
   ScrollView,
-  View,
   useWindowDimensions,
-} from 'react-native';
-import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { X, Check, Camera, ChevronRight } from 'lucide-react-native';
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Text, Button, BottomSheet } from '@/src/components/ui';
-import {
-  StepIndicator,
-  StrokeIcon,
-  ProAvatar,
-} from '@/src/components/shared';
-import { useTranslation } from '@/src/hooks/useTranslation';
-import { hapticLight, hapticSelection, hapticMedium } from '@/src/lib/haptics';
-import { colors } from '@/src/theme';
+import { ProAvatar, StepIndicator, StrokeIcon } from "@/src/components/shared";
+import { BottomSheet, Button, Text } from "@/src/components/ui";
+import { useTranslation } from "@/src/hooks/useTranslation";
+import { hapticLight, hapticMedium, hapticSelection } from "@/src/lib/haptics";
+import { colors } from "@/src/theme";
 
-import { api, ApiError } from '@/src/services';
+import { SAMPLE_USER_CLIP } from "@/src/constants/media";
+import { ANALYSIS_COST } from "@/src/constants/packages";
+import { matchProPlayer } from "@/src/constants/proPlayers";
+import { api, ApiError } from "@/src/services";
+import { useCreditStore } from "@/src/store/credits";
 import {
-  useUploadStore,
-  trimDuration,
-  TRIM_MIN_SEC,
   TRIM_MAX_SEC,
-} from '@/src/store/upload';
-import { useCreditStore } from '@/src/store/credits';
-import { useUserStore } from '@/src/store/user';
-import { STROKE_TYPES, type AnalysisRequest } from '@/src/types';
-import { SAMPLE_USER_CLIP } from '@/src/constants/media';
-import { matchProPlayer } from '@/src/constants/proPlayers';
-import { ANALYSIS_COST } from '@/src/constants/packages';
+  TRIM_MIN_SEC,
+  trimDuration,
+  useUploadStore,
+} from "@/src/store/upload";
+import { useUserStore } from "@/src/store/user";
+import { type AnalysisRequest, type StrokeType } from "@/src/types";
 
 /* -------------------------------------------------------------------------- */
-/*  Types                                                                       */
+/*  Types                                                                     */
 /* -------------------------------------------------------------------------- */
 
 type Step = 0 | 1 | 2;
 
 /* -------------------------------------------------------------------------- */
-/*  Step 0 — Trim                                                               */
+/*  Step 0 — Trim                                                             */
 /* -------------------------------------------------------------------------- */
 
 interface TrimStepProps {
@@ -63,96 +60,151 @@ interface TrimStepProps {
 
 function TrimStep({ onContinue }: TrimStepProps) {
   const { t } = useTranslation();
-  const { width } = useWindowDimensions();
 
+  // ── Store ──────────────────────────────────────────────────────────────────
+  const clipRef = useUploadStore((s) => s.clipRef);
   const clipDurationSec = useUploadStore((s) => s.clipDurationSec);
   const trimStartSec = useUploadStore((s) => s.trimStartSec);
   const trimEndSec = useUploadStore((s) => s.trimEndSec);
   const setTrim = useUploadStore((s) => s.setTrim);
+  const setClip = useUploadStore((s) => s.setClip);
+  const setClipDuration = useUploadStore((s) => s.setClipDuration);
 
   const duration = trimDuration({ trimStartSec, trimEndSec });
   const isValid = duration >= TRIM_MIN_SEC && duration <= TRIM_MAX_SEC;
+  const hasRealVideo = clipRef !== "sample://user";
 
-  // Video player (muted, looping sample)
-  const player = useVideoPlayer(SAMPLE_USER_CLIP, (p) => {
-    p.loop = true;
-    p.muted = true;
+  // ── Pick video ─────────────────────────────────────────────────────────────
+  const pickVideo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["videos"],
+      quality: 1,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      // asset.duration is unreliable for .mov and web — use 60s as a safe
+      // placeholder. The real duration is read from the player once it loads.
+      const durationSec =
+        asset.duration && asset.duration > 0 ? asset.duration / 1000 : 60;
+      setClip(asset.uri, durationSec);
+    }
+  };
+
+  // ── Video player (loops the whole clip) ───────────────────────────────────
+  const player = useVideoPlayer(
+    hasRealVideo ? { uri: clipRef } : SAMPLE_USER_CLIP,
+    (p) => {
+      p.muted = true;
+      p.loop = true;
+      p.play();
+    },
+  );
+  useEffect(() => {
+    player.replace(
+      clipRef === "sample://user" ? SAMPLE_USER_CLIP : { uri: clipRef },
+    );
+  }, [clipRef]);
+
+  // Once the player has loaded the video, read its actual duration and
+  // correct the store. This handles .mov and other formats where
+  // asset.duration from ImagePicker is unreliable or wrong.
+  useEffect(() => {
+    if (!hasRealVideo) return;
+    const sub = player.addListener("statusChange", ({ status }) => {
+      if (status === "readyToPlay" && player.duration > 0) {
+        setClipDuration(player.duration);
+      }
+    });
+    return () => sub.remove();
+  }, [clipRef]);
+
+  // ── Scrubber ───────────────────────────────────────────────────────────────
+  // Track width is measured via onLayout so the math always uses the real
+  // rendered width regardless of screen size or padding.
+  const [trackWidth, setTrackWidth] = useState(0);
+
+  // Single ref holding all mutable drag state.
+  const drag = useRef({
+    tw: 0, // track pixel width
+    dur: clipDurationSec,
+    startSec: trimStartSec,
+    endSec: trimEndSec,
+    active: null as "start" | "end" | null,
+    valAt0: 0, // trim value at gesture start
   });
 
-  /* ---- Dual-handle scrubber via PanResponder ---- */
-  const SCRUBBER_H_PADDING = 20; // px-5 horizontal padding
-  const scrubberWidth = width - SCRUBBER_H_PADDING * 2;
+  // Inline sync — runs during render so the ref is always current
+  drag.current.dur = clipDurationSec;
+  drag.current.startSec = trimStartSec;
+  drag.current.endSec = trimEndSec;
 
-  // Refs hold the current positions so PanResponder callbacks always see
-  // the latest value without stale closures.
-  const startFracRef = useRef(trimStartSec / clipDurationSec);
-  const endFracRef = useRef(trimEndSec / clipDurationSec);
+  const r1 = (v: number) => Math.round(v * 10) / 10;
 
-  // Re-sync refs when store values change externally.
-  useEffect(() => {
-    startFracRef.current = trimStartSec / clipDurationSec;
-    endFracRef.current = trimEndSec / clipDurationSec;
-  }, [trimStartSec, trimEndSec, clipDurationSec]);
+  const makeScrubberPan = useCallback(
+    (handle: "start" | "end") =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        // Prevent ScrollView from capturing the swipe
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: () => {
+          hapticSelection();
+          drag.current.active = handle;
+          drag.current.valAt0 =
+            handle === "start" ? drag.current.startSec : drag.current.endSec;
+          player.pause(); // Pause to show the exact frame the user is scrubbing to
+        },
+        onPanResponderMove: (_e, g) => {
+          const { tw, dur, startSec, endSec, active, valAt0 } = drag.current;
+          if (!active || tw <= 0 || dur <= 0) return;
 
-  /** Clamp a fraction to [0, 1]. */
-  const clamp = (v: number) => Math.max(0, Math.min(1, v));
+          // Use PanResponder's delta `g.dx` rather than pageX for more reliable math
+          const rawSec = Math.max(0, Math.min(dur, valAt0 + (g.dx / tw) * dur));
 
-  /** Convert a fraction to seconds (rounded to 1 decimal). */
-  const toSec = (frac: number) =>
-    Math.round(frac * clipDurationSec * 10) / 10;
+          if (active === "start") {
+            const sec = r1(Math.min(rawSec, endSec - TRIM_MIN_SEC));
+            drag.current.startSec = sec;
+            setTrim(sec, drag.current.endSec);
+            player.currentTime = sec; // Scrub frame visualization
+          } else {
+            const sec = r1(
+              Math.min(
+                Math.max(rawSec, startSec + TRIM_MIN_SEC),
+                Math.min(dur, startSec + TRIM_MAX_SEC),
+              ),
+            );
+            drag.current.endSec = sec;
+            setTrim(drag.current.startSec, sec);
+            player.currentTime = sec; // Scrub frame visualization
+          }
+        },
+        onPanResponderRelease: () => {
+          drag.current.active = null;
+          // Intentionally omitting player.play() to keep video paused on the final frame
+        },
+        onPanResponderTerminate: () => {
+          drag.current.active = null;
+          // Intentionally omitting player.play() to keep video paused on the final frame
+        },
+      }),
+    [player, setTrim],
+  );
 
-  // Snapshot fractions at the start of each drag (g.dx is cumulative from press
-  // origin, so we need the fraction at press-down to compute absolute position).
-  const startDragOriginRef = useRef(0);
-  const endDragOriginRef = useRef(0);
-
-  // Start-handle pan
-  const startHandlePan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        hapticSelection();
-        startDragOriginRef.current = startFracRef.current;
-      },
-      onPanResponderMove: (_e, g) => {
-        const newFrac = clamp(startDragOriginRef.current + g.dx / scrubberWidth);
-        const minFrac = TRIM_MIN_SEC / clipDurationSec;
-        const newStart = Math.min(newFrac, endFracRef.current - minFrac);
-        startFracRef.current = newStart;
-        setTrim(toSec(newStart), toSec(endFracRef.current));
-      },
+  const panResponders = useMemo(
+    () => ({
+      start: makeScrubberPan("start"),
+      end: makeScrubberPan("end"),
     }),
-  ).current;
+    [makeScrubberPan],
+  );
 
-  // End-handle pan
-  const endHandlePan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        hapticSelection();
-        endDragOriginRef.current = endFracRef.current;
-      },
-      onPanResponderMove: (_e, g) => {
-        const newFrac = clamp(endDragOriginRef.current + g.dx / scrubberWidth);
-        const minFrac = TRIM_MIN_SEC / clipDurationSec;
-        const maxFrac = TRIM_MAX_SEC / clipDurationSec;
-        const newEnd = Math.min(
-          Math.max(newFrac, startFracRef.current + minFrac),
-          Math.min(1, startFracRef.current + maxFrac),
-        );
-        endFracRef.current = newEnd;
-        setTrim(toSec(startFracRef.current), toSec(newEnd));
-      },
-    }),
-  ).current;
-
-  const startPct =
-    `${(trimStartSec / clipDurationSec) * 100}%` as `${number}%`;
-  const endPct = `${(trimEndSec / clipDurationSec) * 100}%` as `${number}%`;
-  const widthPct =
-    `${((trimEndSec - trimStartSec) / clipDurationSec) * 100}%` as `${number}%`;
+  // Pixel positions for rendering — derived fresh from store on every render.
+  const startPx =
+    clipDurationSec > 0 ? (trimStartSec / clipDurationSec) * trackWidth : 0;
+  const endPx =
+    clipDurationSec > 0 ? (trimEndSec / clipDurationSec) * trackWidth : 0;
 
   return (
     <ScrollView
@@ -160,7 +212,7 @@ function TrimStep({ onContinue }: TrimStepProps) {
       contentContainerStyle={{ paddingBottom: 24 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Video Preview */}
+      {/* Video preview */}
       <View className="w-full bg-navy" style={{ aspectRatio: 16 / 9 }}>
         <VideoView
           player={player}
@@ -169,7 +221,6 @@ function TrimStep({ onContinue }: TrimStepProps) {
           nativeControls={false}
           accessibilityLabel="Clip preview"
         />
-        {/* Timestamp overlay */}
         <View className="absolute bottom-2 right-2 rounded bg-black/60 px-2 py-0.5">
           <Text variant="mono" className="text-[11px] text-white">
             {trimStartSec.toFixed(1)}s – {trimEndSec.toFixed(1)}s
@@ -178,18 +229,28 @@ function TrimStep({ onContinue }: TrimStepProps) {
       </View>
 
       <View className="px-5 pt-4 gap-4">
-        {/* Sample clip note */}
-        <View className="rounded-input bg-primary/10 px-3 py-2">
-          <Text variant="caption" className="text-primary text-center">
-            {t('upload.sampleClipNote')}
-          </Text>
-        </View>
+        {/* Pick / change video */}
+        <Button
+          label={hasRealVideo ? t("upload.changeVideo") : t("upload.pickVideo")}
+          variant={hasRealVideo ? "secondary" : "primary"}
+          size="md"
+          icon={
+            <Camera
+              size={16}
+              color={hasRealVideo ? colors.primary : colors.white}
+            />
+          }
+          onPress={() => {
+            hapticLight();
+            void pickVideo();
+          }}
+        />
 
-        {/* Camera-angle guide (SPEC §9.1 — shown before trim) — tappable to recording tips */}
+        {/* Camera-angle guide */}
         <Pressable
-          onPress={() => router.push('/recording-tips')}
+          onPress={() => router.push("/recording-tips")}
           accessibilityRole="button"
-          accessibilityLabel={t('upload.cameraGuide')}
+          accessibilityLabel={t("upload.cameraGuide")}
           style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
           className="flex-row items-center gap-3 rounded-card border border-tip-border bg-tip-bg p-3"
         >
@@ -197,65 +258,75 @@ function TrimStep({ onContinue }: TrimStepProps) {
             <Camera size={18} color={colors.primary} />
           </View>
           <Text variant="body" className="flex-1 text-ink">
-            {t('upload.cameraGuide')}
+            {t("upload.cameraGuide")}
           </Text>
           <ChevronRight size={16} color={colors.slate} />
         </Pressable>
 
         {/* Instruction */}
         <Text variant="body" className="text-slate text-center">
-          {t('upload.trimInstruction')}
+          {t("upload.trimInstruction")}
         </Text>
 
         {/* Duration counter */}
         <Text variant="label" className="text-ink text-center">
-          {t('upload.trimSelected', { seconds: duration.toFixed(1) })}
+          {t("upload.trimSelected", { seconds: duration.toFixed(1) })}
         </Text>
 
         {/* Dual-handle scrubber */}
-        <View className="h-11 justify-center">
-          {/* Track background */}
-          <View className="h-2 w-full rounded-full bg-border" />
+        <View
+          className="h-11 justify-center"
+          onLayout={(e) => {
+            const w = e.nativeEvent.layout.width;
+            setTrackWidth(w);
+            drag.current.tw = w;
+          }}
+        >
+          {trackWidth > 0 && (
+            <>
+              {/* Track background */}
+              <View className="absolute h-2 w-full rounded-full bg-border" />
 
-          {/* Selected region (light blue fill) */}
-          <View
-            className="absolute h-2 rounded-full bg-primary/30"
-            style={{ left: startPct, width: widthPct }}
-          />
+              {/* Selected region */}
+              <View
+                className="absolute h-2 rounded-full bg-primary/30"
+                style={{ left: startPx, width: Math.max(0, endPx - startPx) }}
+              />
 
-          {/* Handles — absolutely positioned, 44pt touch targets */}
-          {/* Start handle */}
-          <View
-            {...startHandlePan.panHandlers}
-            style={{ position: 'absolute', left: startPct, marginLeft: -22 }}
-            className="h-11 w-11 items-center justify-center"
-          >
-            <View className="h-5 w-5 rounded-full bg-primary shadow-md" />
-          </View>
+              {/* Start handle */}
+              <View
+                {...panResponders.start.panHandlers}
+                style={{ position: "absolute", left: startPx - 22 }}
+                className="h-11 w-11 items-center justify-center"
+              >
+                <View className="h-5 w-5 rounded-full bg-primary shadow-md" />
+              </View>
 
-          {/* End handle */}
-          <View
-            {...endHandlePan.panHandlers}
-            style={{ position: 'absolute', left: endPct, marginLeft: -22 }}
-            className="h-11 w-11 items-center justify-center"
-          >
-            <View className="h-5 w-5 rounded-full bg-primary shadow-md" />
-          </View>
+              {/* End handle */}
+              <View
+                {...panResponders.end.panHandlers}
+                style={{ position: "absolute", left: endPx - 22 }}
+                className="h-11 w-11 items-center justify-center"
+              >
+                <View className="h-5 w-5 rounded-full bg-primary shadow-md" />
+              </View>
+            </>
+          )}
         </View>
 
         {/* Validation warning */}
         {!isValid && (
           <Text variant="caption" className="text-score-red text-center">
-            {t('upload.trimWarning')}
+            {t("upload.trimWarning")}
           </Text>
         )}
 
         {/* Continue */}
         <Button
-          label={t('common.continue')}
+          label={t("common.continue")}
           variant="primary"
           size="lg"
-          disabled={!isValid}
+          disabled={!isValid || !hasRealVideo}
           onPress={() => {
             hapticLight();
             onContinue();
@@ -267,32 +338,44 @@ function TrimStep({ onContinue }: TrimStepProps) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Step 1 — Stroke Type                                                        */
+/*  Step 1 — Stroke Type                                                      */
 /* -------------------------------------------------------------------------- */
 
 interface StrokeStepProps {
   onContinue: () => void;
 }
 
+// Backend currently only supports Smash analysis.
+const SUPPORTED_STROKES: StrokeType[] = ["Smash"];
+
 function StrokeStep({ onContinue }: StrokeStepProps) {
   const { t } = useTranslation();
   const strokeType = useUploadStore((s) => s.strokeType);
   const setStroke = useUploadStore((s) => s.setStroke);
 
+  // Auto-select Smash since it is the only supported stroke.
+  useEffect(() => {
+    if (strokeType === null) setStroke("Smash");
+  }, []);
+
   return (
     <ScrollView
       className="flex-1"
-      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24, gap: 16 }}
+      contentContainerStyle={{
+        paddingHorizontal: 20,
+        paddingBottom: 24,
+        gap: 16,
+      }}
       showsVerticalScrollIndicator={false}
     >
       {/* Instruction */}
       <Text variant="body" className="text-slate text-center pt-2">
-        {t('upload.strokeInstruction')}
+        {t("upload.strokeInstruction")}
       </Text>
 
       {/* 2-column grid */}
       <View className="flex-row flex-wrap gap-3">
-        {STROKE_TYPES.map((s) => {
+        {SUPPORTED_STROKES.map((s) => {
           const selected = strokeType === s;
           return (
             <Pressable
@@ -304,13 +387,13 @@ function StrokeStep({ onContinue }: StrokeStepProps) {
               accessibilityRole="radio"
               accessibilityState={{ selected }}
               accessibilityLabel={t(`stroke.${s}`)}
-              style={{ width: '47%' }}
+              style={{ width: "47%" }}
               className={[
-                'rounded-card p-4 items-center gap-2 border-2',
+                "rounded-card p-4 items-center gap-2 border-2",
                 selected
-                  ? 'border-primary bg-primary/10'
-                  : 'border-border bg-white',
-              ].join(' ')}
+                  ? "border-primary bg-primary/10"
+                  : "border-border bg-white",
+              ].join(" ")}
             >
               {/* Checkmark */}
               {selected && (
@@ -326,7 +409,7 @@ function StrokeStep({ onContinue }: StrokeStepProps) {
               />
               <Text
                 variant="label"
-                className={selected ? 'text-primary' : 'text-ink'}
+                className={selected ? "text-primary" : "text-ink"}
               >
                 {t(`stroke.${s}`)}
               </Text>
@@ -341,7 +424,7 @@ function StrokeStep({ onContinue }: StrokeStepProps) {
 
       {/* Continue */}
       <Button
-        label={t('common.continue')}
+        label={t("common.continue")}
         variant="primary"
         size="lg"
         disabled={strokeType === null}
@@ -355,26 +438,27 @@ function StrokeStep({ onContinue }: StrokeStepProps) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Step 2 — Court Calibration                                                  */
+/*  Step 2 — Court Calibration                                                */
 /* -------------------------------------------------------------------------- */
 
 interface CourtStepProps {
   onContinue: () => void;
 }
 
-type PinKey = 'tl' | 'tr' | 'bl' | 'br';
-const PIN_KEYS: PinKey[] = ['tl', 'tr', 'bl', 'br'];
+type PinKey = "tl" | "tr" | "bl" | "br";
+const PIN_KEYS: PinKey[] = ["tl", "tr", "bl", "br"];
 const PIN_LABELS: Record<PinKey, string> = {
-  tl: 'TL',
-  tr: 'TR',
-  bl: 'BL',
-  br: 'BR',
+  tl: "TL",
+  tr: "TR",
+  bl: "BL",
+  br: "BR",
 };
 
 function CourtStep({ onContinue }: CourtStepProps) {
   const { t } = useTranslation();
   const { width } = useWindowDimensions();
 
+  const clipRef = useUploadStore((s) => s.clipRef);
   const courtCorners = useUploadStore((s) => s.courtCorners);
   const courtTouched = useUploadStore((s) => s.courtTouched);
   const setCorners = useUploadStore((s) => s.setCorners);
@@ -383,18 +467,52 @@ function CourtStep({ onContinue }: CourtStepProps) {
   // The calibration frame is displayed at a 16:9 aspect ratio.
   const frameHeight = width * (9 / 16);
 
-  // Video player (paused at frame 0 to show the calibration frame)
-  const player = useVideoPlayer(SAMPLE_USER_CLIP, (p) => {
-    p.loop = false;
-    p.muted = true;
-    p.pause();
-  });
+  const trimStartSec = useUploadStore((s) => s.trimStartSec);
+
+  // Video player — paused at trimStartSec so pins are placed on the exact frame
+  // the pipeline will process.
+  const player = useVideoPlayer(
+    clipRef === "sample://user" ? SAMPLE_USER_CLIP : { uri: clipRef },
+    (p) => {
+      p.loop = false;
+      p.muted = true;
+      // Don't seek/pause here — the video isn't loaded yet and will show black.
+    },
+  );
+
+  // Use a ref so the statusChange listener always reads the latest trimStartSec
+  // without needing to be recreated every time it changes.
+  const trimStartRef = useRef(trimStartSec);
+  trimStartRef.current = trimStartSec;
+
+  // Seek to trimStartSec and freeze once the video is actually ready.
+  // Seeking before statusChange='readyToPlay' produces a black frame on web.
+  useEffect(() => {
+    const sub = player.addListener("statusChange", ({ status }) => {
+      if (status === "readyToPlay") {
+        player.currentTime = trimStartRef.current;
+        player.pause();
+      }
+    });
+    return () => sub.remove();
+  }, [player]);
+
+  // Replace source when the clip changes (rare, but keeps state consistent).
+  useEffect(() => {
+    player.replace(
+      clipRef === "sample://user" ? SAMPLE_USER_CLIP : { uri: clipRef },
+    );
+  }, [clipRef]);
 
   // Keep live refs to avoid stale closures inside PanResponder callbacks.
   const cornersRef = useRef(courtCorners);
   const touchedRef = useRef(courtTouched);
-  useEffect(() => { cornersRef.current = courtCorners; }, [courtCorners]);
-  useEffect(() => { touchedRef.current = courtTouched; }, [courtTouched]);
+  useEffect(() => {
+    cornersRef.current = courtCorners;
+  }, [courtCorners]);
+  useEffect(() => {
+    touchedRef.current = courtTouched;
+  }, [courtTouched]);
   // Capture the fractional start position when a drag begins.
   const dragStartRef = useRef<Record<PinKey, { x: number; y: number }>>({
     tl: { x: 0, y: 0 },
@@ -429,14 +547,14 @@ function CourtStep({ onContinue }: CourtStepProps) {
   );
 
   // Build pan responders once per mount (stable thanks to makePinPan).
-  const panResponders = useRef<Record<PinKey, ReturnType<typeof PanResponder.create>>>(
-    {
-      tl: makePinPan('tl'),
-      tr: makePinPan('tr'),
-      bl: makePinPan('bl'),
-      br: makePinPan('br'),
-    },
-  );
+  const panResponders = useRef<
+    Record<PinKey, ReturnType<typeof PanResponder.create>>
+  >({
+    tl: makePinPan("tl"),
+    tr: makePinPan("tr"),
+    bl: makePinPan("bl"),
+    br: makePinPan("br"),
+  });
 
   return (
     <ScrollView
@@ -478,7 +596,7 @@ function CourtStep({ onContinue }: CourtStepProps) {
               key={key}
               {...panResponders.current[key].panHandlers}
               style={{
-                position: 'absolute',
+                position: "absolute",
                 left: corner.x * width - 22,
                 top: corner.y * frameHeight - 22,
               }}
@@ -486,7 +604,10 @@ function CourtStep({ onContinue }: CourtStepProps) {
               accessibilityLabel={`Court corner ${PIN_LABELS[key]}`}
             >
               <View className="h-7 w-7 rounded-full bg-orange border-2 border-white shadow items-center justify-center">
-                <Text variant="caption" className="text-white text-[9px] font-bold">
+                <Text
+                  variant="caption"
+                  className="text-white text-[9px] font-bold"
+                >
                   {PIN_LABELS[key]}
                 </Text>
               </View>
@@ -499,7 +620,7 @@ function CourtStep({ onContinue }: CourtStepProps) {
           <View className="absolute bottom-2 left-0 right-0 items-center">
             <View className="bg-black/60 rounded-full px-3 py-1">
               <Text variant="caption" className="text-white">
-                {t('upload.courtGuideHint')}
+                {t("upload.courtGuideHint")}
               </Text>
             </View>
           </View>
@@ -509,12 +630,12 @@ function CourtStep({ onContinue }: CourtStepProps) {
       <View className="px-5 pt-4 gap-4">
         {/* Instruction */}
         <Text variant="body" className="text-slate text-center">
-          {t('upload.courtInstruction')}
+          {t("upload.courtInstruction")}
         </Text>
 
         {/* Continue — always enabled */}
         <Button
-          label={t('common.continue')}
+          label={t("common.continue")}
           variant="primary"
           size="lg"
           onPress={() => {
@@ -528,7 +649,7 @@ function CourtStep({ onContinue }: CourtStepProps) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  S7 Payment Bottom Sheet                                                     */
+/*  S7 Payment Bottom Sheet                                                   */
 /* -------------------------------------------------------------------------- */
 
 interface PaymentSheetProps {
@@ -584,10 +705,10 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
       const isFirst = profile.hasCompletedFirstAnalysis === false;
       onSuccess(jobId, isFirst, strokeType);
     } catch (err) {
-      if (err instanceof ApiError && err.code === 'INSUFFICIENT_CREDITS') {
-        setApiError(t('upload.insufficient', { balance, shortfall }));
+      if (err instanceof ApiError && err.code === "INSUFFICIENT_CREDITS") {
+        setApiError(t("upload.insufficient", { balance, shortfall }));
       } else {
-        setApiError(t('error.UNKNOWN'));
+        setApiError(t("error.UNKNOWN"));
       }
     } finally {
       setConfirming(false);
@@ -609,7 +730,7 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
     // Keep sheet open (visible stays true in parent) and navigate to wallet.
     // `topup=1` tells Wallet to show a back chevron so the user can return
     // here after purchasing (SPEC §6.4).
-    router.push('/(tabs)/wallet?topup=1');
+    router.push("/(tabs)/wallet?topup=1");
   }, []);
 
   if (strokeType === null) return null;
@@ -622,8 +743,11 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
       scrollable
     >
       {/* Title */}
-      <Text variant="h1" className="text-[18px] text-ink font-semibold mb-4 mt-1">
-        {t('upload.confirmTitle')}
+      <Text
+        variant="h1"
+        className="text-[18px] text-ink font-semibold mb-4 mt-1"
+      >
+        {t("upload.confirmTitle")}
       </Text>
 
       {/* Summary rows */}
@@ -631,7 +755,7 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
         {/* Duration */}
         <View className="flex-row justify-between items-center">
           <Text variant="body" className="text-slate">
-            {t('upload.summaryDuration')}
+            {t("upload.summaryDuration")}
           </Text>
           <Text variant="label" className="text-ink">
             {duration.toFixed(1)}s
@@ -641,7 +765,7 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
         {/* Stroke */}
         <View className="flex-row justify-between items-center">
           <Text variant="body" className="text-slate">
-            {t('upload.summaryStroke')}
+            {t("upload.summaryStroke")}
           </Text>
           <Text variant="label" className="text-ink">
             {t(`stroke.${strokeType}`)}
@@ -652,7 +776,7 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
         {matchedPro !== null && (
           <View className="flex-row justify-between items-center">
             <Text variant="body" className="text-slate">
-              {t('upload.summaryPro')}
+              {t("upload.summaryPro")}
             </Text>
             <ProAvatar player={matchedPro} size={28} showName />
           </View>
@@ -661,10 +785,10 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
         {/* Cost */}
         <View className="flex-row justify-between items-center">
           <Text variant="body" className="text-slate">
-            {t('upload.summaryCost')}
+            {t("upload.summaryCost")}
           </Text>
           <Text variant="mono" className="text-orange font-medium">
-            {`-${ANALYSIS_COST} ${t('common.creditsLabel')}`}
+            {`-${ANALYSIS_COST} ${t("common.creditsLabel")}`}
           </Text>
         </View>
 
@@ -674,13 +798,15 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
         {/* Balance after */}
         <View className="flex-row justify-between items-center">
           <Text variant="body" className="text-slate">
-            {t('upload.balanceAfter', { balance: balanceAfter })}
+            {t("upload.balanceAfter", { balance: balanceAfter })}
           </Text>
           <Text
             variant="mono"
-            className={hasSufficientCredits ? 'text-score-green' : 'text-score-red'}
+            className={
+              hasSufficientCredits ? "text-score-green" : "text-score-red"
+            }
           >
-            {`${balanceAfter} ${t('common.creditsLabel')}`}
+            {`${balanceAfter} ${t("common.creditsLabel")}`}
           </Text>
         </View>
       </View>
@@ -698,7 +824,7 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
       {!hasSufficientCredits && (
         <View className="mb-3 rounded-input bg-score-amber/10 px-3 py-2">
           <Text variant="caption" className="text-score-amber text-center">
-            {t('upload.insufficient', { balance, shortfall })}
+            {t("upload.insufficient", { balance, shortfall })}
           </Text>
         </View>
       )}
@@ -706,7 +832,7 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
       {/* CTA */}
       {hasSufficientCredits ? (
         <Button
-          label={t('upload.confirmCta')}
+          label={t("upload.confirmCta")}
           variant="orange"
           size="lg"
           loading={confirming}
@@ -717,7 +843,7 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
         />
       ) : (
         <Button
-          label={t('upload.topUpCta')}
+          label={t("upload.topUpCta")}
           variant="orange"
           size="lg"
           onPress={handleTopUp}
@@ -726,7 +852,7 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
 
       {/* Cancel link */}
       <Button
-        label={t('upload.cancelLink')}
+        label={t("upload.cancelLink")}
         variant="text"
         size="md"
         onPress={onClose}
@@ -737,7 +863,7 @@ function PaymentSheet({ visible, onClose, onSuccess }: PaymentSheetProps) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Root screen                                                                 */
+/*  Root screen                                                               */
 /* -------------------------------------------------------------------------- */
 
 export default function UploadScreen() {
@@ -753,10 +879,10 @@ export default function UploadScreen() {
   }, []);
 
   const steps = [
-    t('upload.stepTrim'),
-    t('upload.stepStroke'),
-    t('upload.stepCourt'),
-    t('upload.stepConfirm'),
+    t("upload.stepTrim"),
+    t("upload.stepStroke"),
+    t("upload.stepCourt"),
+    t("upload.stepConfirm"),
   ];
 
   // StepIndicator current: 0–2 for the three main steps, 3 when payment is open.
@@ -792,8 +918,8 @@ export default function UploadScreen() {
     (jobId: string, isFirst: boolean, strokeType: string) => {
       useUploadStore.getState().reset();
       router.replace({
-        pathname: '/processing',
-        params: { jobId, first: isFirst ? '1' : '0', stroke: strokeType },
+        pathname: "/processing",
+        params: { jobId, first: isFirst ? "1" : "0", stroke: strokeType },
       });
     },
     [],
@@ -812,7 +938,7 @@ export default function UploadScreen() {
         <Pressable
           onPress={handleClose}
           accessibilityRole="button"
-          accessibilityLabel={t('common.close')}
+          accessibilityLabel={t("common.close")}
           className="h-11 w-11 items-center justify-center rounded-full bg-border/40"
           hitSlop={8}
         >
@@ -828,22 +954,22 @@ export default function UploadScreen() {
             <Pressable
               onPress={handleStepBack}
               accessibilityRole="button"
-              accessibilityLabel={t('common.back')}
+              accessibilityLabel={t("common.back")}
               hitSlop={8}
               className="self-start"
             >
               <Text variant="label" className="text-primary text-[14px]">
-                {t('common.back')}
+                {t("common.back")}
               </Text>
             </Pressable>
           ) : null}
         </View>
         <Text variant="h1" className="text-[20px] text-ink mt-1">
           {step === 0
-            ? t('upload.trimTitle')
+            ? t("upload.trimTitle")
             : step === 1
-              ? t('upload.strokeTitle')
-              : t('upload.courtTitle')}
+              ? t("upload.strokeTitle")
+              : t("upload.courtTitle")}
         </Text>
       </View>
 

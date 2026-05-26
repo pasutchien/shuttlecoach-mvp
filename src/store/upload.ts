@@ -34,6 +34,10 @@ interface UploadState {
 
   /** Begin a fresh upload from the bundled sample clip. */
   start: () => void;
+  /** Set the real picked video URI and its duration. Resets trim to cover the full clip. */
+  setClip: (uri: string, durationSec: number) => void;
+  /** Correct the clip duration once the player reports the real value. Adjusts trimEnd but does not reset trimStart or clipRef. */
+  setClipDuration: (durationSec: number) => void;
   setTrim: (startSec: number, endSec: number) => void;
   setStroke: (stroke: StrokeType) => void;
   setCorners: (corners: CourtCorners) => void;
@@ -55,6 +59,16 @@ export const useUploadStore = create<UploadState>((set) => ({
   ...initialState,
 
   start: () => set({ ...initialState }),
+  setClip: (clipRef, clipDurationSec) => set({
+    clipRef,
+    clipDurationSec,
+    trimStartSec: 0,
+    trimEndSec: Math.min(clipDurationSec, TRIM_MAX_SEC),
+  }),
+  setClipDuration: (clipDurationSec) => set({
+    clipDurationSec,
+    trimEndSec: Math.min(clipDurationSec, TRIM_MAX_SEC),
+  }),
   setTrim: (trimStartSec, trimEndSec) => set({ trimStartSec, trimEndSec }),
   setStroke: (strokeType) => set({ strokeType }),
   setCorners: (courtCorners) => set({ courtCorners }),

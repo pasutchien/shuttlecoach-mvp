@@ -33,6 +33,7 @@
       "expo-font",
       "expo-localization",
       "expo-video",
+      ["expo-image-picker", { "photosPermission": "Allow Shuttle Coach to access your videos for analysis." }],
       [
         "expo-splash-screen",
         {

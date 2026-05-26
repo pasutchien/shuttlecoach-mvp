@@ -36,6 +36,11 @@ export interface RefundResult {
 export type ProfileInput = Partial<UserProfile>;
 
 export interface ShuttleCoachApi {
+  /* --- Auth -------------------------------------------------------------- */
+
+  /** Create a fresh demo user with 100 welcome credits. Returns the userId to persist. */
+  login(): Promise<{ userId: string }>;
+
   /* --- Pro players ------------------------------------------------------- */
 
   /** All Pro Players with their reference-clip coverage (SPEC §7). */

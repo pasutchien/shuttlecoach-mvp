@@ -20,7 +20,9 @@ import { MessageCircle } from 'lucide-react-native';
 import { Button, Input, Text, cardShadow } from '@/src/components/ui';
 import { SponsorBadge } from '@/src/components/shared';
 import { useTranslation } from '@/src/hooks/useTranslation';
-import { useUserStore } from '@/src/store';
+import { api } from '@/src/services';
+import { setActiveUserId } from '@/src/services/real/realApi';
+import { useSettingsStore } from '@/src/store';
 import { hapticLight } from '@/src/lib/haptics';
 
 /** The Google "G" mark (standard 4-colour logo). */
@@ -50,18 +52,21 @@ function GoogleIcon({ size = 18 }: { size?: number }) {
 export default function LoginScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const profile = useUserStore((s) => s.profile);
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  /**
-   * MOCK sign-in. No real auth — route straight on. A returning user (profile
-   * already exists) goes to Home; a new user goes to Onboarding.
-   */
-  const proceed = () => {
+  const proceed = async () => {
     hapticLight();
-    router.replace(profile ? '/(tabs)/home' : '/onboarding');
+    setLoading(true);
+    try {
+      const { userId } = await api.login();
+      useSettingsStore.getState().setUserId(userId);
+      setActiveUserId(userId);
+      router.replace('/onboarding');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -116,7 +121,7 @@ export default function LoginScreen() {
             label={t('login.loginCta')}
             variant="orange"
             size="lg"
-            onPress={proceed}
+            onPress={() => { void proceed(); }}
           />
 
           {/* Divider */}
@@ -130,7 +135,7 @@ export default function LoginScreen() {
 
           {/* Continue with Google */}
           <Pressable
-            onPress={proceed}
+            onPress={() => { void proceed(); }}
             accessibilityRole="button"
             accessibilityLabel={t('login.google')}
             className="mb-3 h-12 flex-row items-center justify-center gap-2.5 rounded-button border border-border bg-white active:opacity-90"
@@ -144,7 +149,7 @@ export default function LoginScreen() {
           {/* Continue with LINE — LINE brand green (#06C755). Background set
               via a className arbitrary value, not a style function. */}
           <Pressable
-            onPress={proceed}
+            onPress={() => { void proceed(); }}
             accessibilityRole="button"
             accessibilityLabel={t('login.line')}
             className="h-12 flex-row items-center justify-center gap-2.5 rounded-button bg-[#06C755] active:opacity-90"
@@ -161,7 +166,7 @@ export default function LoginScreen() {
               {t('login.noAccount')}{' '}
             </Text>
             <Pressable
-              onPress={proceed}
+              onPress={() => { void proceed(); }}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={t('login.signUp')}

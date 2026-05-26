@@ -17,6 +17,9 @@ import {
 
 import '../global.css';
 import { hydrateApp } from '@/src/store';
+import { useSettingsStore } from '@/src/store';
+import { setActiveUserId } from '@/src/services/real/realApi';
+import { USING_MOCK_API } from '@/src/services';
 import { ToastHost } from '@/src/components/ui';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -36,6 +39,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     hydrateApp()
+      .then(() => {
+        if (!USING_MOCK_API) {
+          const userId = useSettingsStore.getState().userId;
+          if (userId) setActiveUserId(userId);
+        }
+      })
       .catch(() => {})
       .finally(() => setStateHydrated(true));
   }, []);
