@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Modal,
   PanResponder,
   Platform,
@@ -40,6 +41,7 @@ import {
   ChevronRight,
   Pause,
   Play,
+  Repeat2,
   Share2,
   X,
 } from "lucide-react-native";
@@ -125,6 +127,91 @@ function SkeletonLoading() {
         <Skeleton className="h-24 w-full rounded-card" />
       </ScrollView>
     </View>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Sub-component: ClipPlayerSheet                                              */
+/* -------------------------------------------------------------------------- */
+
+interface ClipPlayerSheetProps {
+  clipUrl: string | null;
+  title: string;
+  onClose: () => void;
+}
+
+function ClipPlayerSheet({ clipUrl, title, onClose }: ClipPlayerSheetProps) {
+  const { t } = useTranslation();
+  const clipPlayer = useVideoPlayer(
+    clipUrl ? { uri: clipUrl } : null,
+    (p) => {
+      p.loop = true;
+      p.muted = true;
+      p.playbackRate = 0.5;
+    },
+  );
+
+  // Auto-play as soon as the clip is ready
+  useEffect(() => {
+    const sub = clipPlayer.addListener('statusChange', ({ status }: { status: string }) => {
+      if (status === 'readyToPlay') {
+        clipPlayer.play();
+      }
+    });
+    return () => sub.remove();
+  }, [clipPlayer]);
+
+  // Load source when URL changes
+  useEffect(() => {
+    if (clipUrl) {
+      clipPlayer.replace({ uri: clipUrl });
+      clipPlayer.loop = true;
+    } else {
+      clipPlayer.pause();
+    }
+  }, [clipUrl]);
+
+  return (
+    <BottomSheet visible={clipUrl !== null} onClose={onClose} heightRatio={0.6}>
+      {/* Header */}
+      <View className="flex-row items-center justify-between mb-3">
+        <Text variant="h1" className="flex-1 pr-4 text-[16px] font-semibold text-ink">
+          {title}
+        </Text>
+        <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button">
+          <X size={22} color={colors.slate} />
+        </Pressable>
+      </View>
+
+      {/* Frame / video */}
+      <View
+        className="w-full rounded-card overflow-hidden bg-black"
+        style={{ aspectRatio: 16 / 9 }}
+      >
+        {clipUrl && /\.(jpg|jpeg|png|webp)$/i.test(clipUrl) ? (
+          <Image
+            source={{ uri: clipUrl }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="contain"
+          />
+        ) : clipUrl ? (
+          <VideoView
+            player={clipPlayer}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="contain"
+            nativeControls={false}
+          />
+        ) : null}
+      </View>
+
+      <Text variant="caption" className="text-slate text-center text-[12px] mt-2">
+        Highlighted joints shown in white. Green = matches pro · Red = deviation detected.
+      </Text>
+
+      <View className="mt-4">
+        <Button label={t('common.close')} variant="primary" size="lg" onPress={onClose} />
+      </View>
+    </BottomSheet>
   );
 }
 
@@ -482,6 +569,9 @@ export default function AnalysisScreen() {
   >(undefined);
   const [activeDrillMistake, setActiveDrillMistake] =
     useState<MistakeCard | null>(null);
+  const [activeClip, setActiveClip] = useState<{ url: string; title: string } | null>(null);
+  const [activePhase, setActivePhase] = useState<number | null>(null);
+  const phaseLoopRef = useRef<{ start: number; end: number } | null>(null);
   const [showShareCard, setShowShareCard] = useState(false);
   const [showConfetti, setShowConfetti] = useState(isFirstAnalysis);
 
@@ -545,7 +635,16 @@ export default function AnalysisScreen() {
         durationRef.current = d;
         setDuration((prev) => (prev > 0 ? prev : d));
       }
-      if (!scrubbing.current) {
+      const loop = phaseLoopRef.current;
+      if (loop) {
+        const t = compPlayer.currentTime;
+        if (isFinite(t) && t >= loop.end) {
+          compPlayer.currentTime = loop.start;
+          setCurrentTime(loop.start);
+        } else if (!scrubbing.current && isFinite(t)) {
+          setCurrentTime(t);
+        }
+      } else if (!scrubbing.current) {
         const t = compPlayer.currentTime;
         if (isFinite(t)) setCurrentTime(t);
       }
@@ -985,7 +1084,7 @@ export default function AnalysisScreen() {
                       {phase.name}
                     </Text>
                     <View
-                      className="px-2 py-0.5 rounded-full"
+                      className="px-2 py-0.5 rounded-full mr-2"
                       style={{ backgroundColor: phaseScoreBg }}
                     >
                       <Text
@@ -996,6 +1095,41 @@ export default function AnalysisScreen() {
                         {phase.score}%
                       </Text>
                     </View>
+                    {/* Phase loop toggle */}
+                    {phase.startSec != null && phase.endSec != null ? (
+                      <Pressable
+                        onPress={() => {
+                          hapticLight();
+                          if (activePhase === phase.number) {
+                            // Toggle off — free play
+                            phaseLoopRef.current = null;
+                            setActivePhase(null);
+                          } else {
+                            // Toggle on — loop this phase
+                            phaseLoopRef.current = { start: phase.startSec, end: phase.endSec };
+                            setActivePhase(phase.number);
+                            compPlayer.currentTime = phase.startSec;
+                            compPlayer.play();
+                            setPlaying(true);
+                          }
+                        }}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Loop phase ${phase.number}`}
+                        className="h-7 w-7 items-center justify-center rounded-full"
+                        style={{
+                          backgroundColor:
+                            activePhase === phase.number
+                              ? colors.primary
+                              : "rgba(255,255,255,0.08)",
+                        }}
+                      >
+                        <Repeat2
+                          size={13}
+                          color={activePhase === phase.number ? colors.white : colors.slate}
+                        />
+                      </Pressable>
+                    ) : null}
                   </View>
 
                   {/* Phase items */}
@@ -1023,6 +1157,26 @@ export default function AnalysisScreen() {
                           >
                             {item.text}
                           </Text>
+                          {item.clipUrl ? (
+                            <Pressable
+                              onPress={() => {
+                                hapticLight();
+                                setActiveClip({
+                                  url: item.clipUrl!,
+                                  title: item.text.slice(0, 60),
+                                });
+                              }}
+                              hitSlop={8}
+                              className="ml-2 px-2 py-1 rounded-input bg-mint/10"
+                            >
+                              <Text
+                                variant="caption"
+                                className="text-mint text-[11px] font-semibold"
+                              >
+                                View
+                              </Text>
+                            </Pressable>
+                          ) : null}
                         </View>
                       );
                     }
@@ -1091,23 +1245,45 @@ export default function AnalysisScreen() {
                         >
                           {item.text}
                         </Text>
-                        {item.drillId ? (
-                          <Pressable
-                            onPress={() => {
-                              hapticLight();
-                              setActiveDrillMistake(mistakeFromItem);
-                            }}
-                            hitSlop={8}
-                            className="ml-2 mt-0.5 px-2 py-1 rounded-input bg-primary/10"
-                          >
-                            <Text
-                              variant="caption"
-                              className="text-primary text-[11px] font-semibold"
+                        <View className="flex-col gap-1 ml-2 mt-0.5">
+                          {item.clipUrl ? (
+                            <Pressable
+                              onPress={() => {
+                                hapticLight();
+                                setActiveClip({
+                                  url: item.clipUrl!,
+                                  title: mistakeFromItem.title,
+                                });
+                              }}
+                              hitSlop={8}
+                              className="px-2 py-1 rounded-input bg-mint/10"
                             >
-                              {t("analysis.howToFix")}
-                            </Text>
-                          </Pressable>
-                        ) : null}
+                              <Text
+                                variant="caption"
+                                className="text-mint text-[11px] font-semibold"
+                              >
+                                View
+                              </Text>
+                            </Pressable>
+                          ) : null}
+                          {item.drillId ? (
+                            <Pressable
+                              onPress={() => {
+                                hapticLight();
+                                setActiveDrillMistake(mistakeFromItem);
+                              }}
+                              hitSlop={8}
+                              className="px-2 py-1 rounded-input bg-primary/10"
+                            >
+                              <Text
+                                variant="caption"
+                                className="text-primary text-[11px] font-semibold"
+                              >
+                                {t("analysis.howToFix")}
+                              </Text>
+                            </Pressable>
+                          ) : null}
+                        </View>
                       </Pressable>
                     );
                   })}
@@ -1202,6 +1378,13 @@ export default function AnalysisScreen() {
 
       {/* Confetti (first analysis) */}
       <ConfettiOverlay active={showConfetti} />
+
+      {/* Joint clip player */}
+      <ClipPlayerSheet
+        clipUrl={activeClip?.url ?? null}
+        title={activeClip?.title ?? ''}
+        onClose={() => setActiveClip(null)}
+      />
 
       {/* S10 Drill sheet */}
       <DrillSheet

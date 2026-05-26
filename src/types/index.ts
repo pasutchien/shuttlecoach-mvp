@@ -163,6 +163,8 @@ export interface FeedbackItem {
   drillId?: string;
   timestampSec?: number;
   severity?: Severity;
+  /** URL of a short joint-highlight clip for this item. */
+  clipUrl?: string;
 }
 
 export interface FeedbackPhase {
@@ -171,6 +173,10 @@ export interface FeedbackPhase {
   /** 0–100 score for this phase. */
   score: number;
   items: FeedbackItem[];
+  /** Video timestamp (seconds) where this phase starts. */
+  startSec: number;
+  /** Video timestamp (seconds) where this phase ends. */
+  endSec: number;
 }
 
 /* ----------------------------------------------------------------------------
